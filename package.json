@@ -12,7 +12,10 @@
     "lint": "turbo lint",
     "format": "prettier -w .",
     "docker:up": "docker compose --env-file infra/.env -f infra/docker-compose.yml up -d",
-    "docker:down": "docker compose --env-file infra/.env -f infra/docker-compose.yml down -v"
+    "docker:down": "docker compose --env-file infra/.env -f infra/docker-compose.yml down -v",
+    "db:migrate": "npm -w @repo/db run prisma:migrate",
+    "db:generate": "npm -w @repo/db run prisma:generate",
+    "db:studio": "npm -w @repo/db run prisma:studio"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
