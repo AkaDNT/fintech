@@ -5,8 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -26,7 +25,7 @@ enum Role {
 
 model User{
   id String @id @default(cuid())
-  email String
+  email String @unique
   passwordHash String
   status UserStatus @default(ACTIVE)
   role Role @default(USER)
@@ -40,7 +39,7 @@ model RefreshToken{
   id String @id @default(cuid())
   userId String
   tokenHash String
-  revokedAt DateTime
+  revokedAt DateTime?
   expiresAt DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

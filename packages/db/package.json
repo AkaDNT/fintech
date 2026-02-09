@@ -2,18 +2,20 @@
   "name": "@repo/db",
   "private": true,
   "version": "0.0.1",
-  "description": "",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.19.2",
     "prisma": "^6.19.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
