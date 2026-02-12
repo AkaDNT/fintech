@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
+import { als } from '@repo/shared';
 
 // Ensures every request has a stable trace id for end-to-end log correlation.
 // Reuses `x-trace-id` from upstream (gateway/client) when present, otherwise generates one.
@@ -16,5 +17,5 @@ export function traceIdMiddleware(
   req.traceId = traceId;
   res.setHeader('x-trace-id', traceId);
 
-  next();
+  als.run({ traceId }, () => next());
 }

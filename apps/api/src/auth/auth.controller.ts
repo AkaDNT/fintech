@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Response } from 'express';
-import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 import { Role } from '@repo/db';
 import { RolesGuard } from 'src/common/roles.guard';
@@ -18,6 +17,7 @@ import { Roles } from 'src/common/roles.decorator';
 import { LoginDto } from './dto/login.dto';
 import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
+import { JwtAccessGuard } from './jwt-access.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -41,7 +41,7 @@ export class AuthController {
     });
   }
 
-  @UseGuards(AuthGuard('jwt-access'), RolesGuard)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Roles('ADMIN')
   @Post('create-user')
   async createUser(
@@ -93,7 +93,7 @@ export class AuthController {
     return { ok: true };
   }
 
-  @UseGuards(AuthGuard('jwt-access'))
+  @UseGuards(JwtAccessGuard)
   @Get('/me')
   me(@Req() req: any) {
     return { user: req.user };

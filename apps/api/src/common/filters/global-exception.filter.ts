@@ -10,10 +10,13 @@ import { Request, Response } from 'express';
 import { AppException } from '../errors/app.exception';
 import { ERROR_CODES } from '../errors/error-codes';
 import { mapPrismaError } from '../errors/prisma-error';
+import { PinoLogger } from 'nestjs-pino';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
+  constructor(private readonly logger: PinoLogger) {
+    this.logger.setContext(GlobalExceptionFilter.name);
+  }
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<Request & { traceId: string }>();

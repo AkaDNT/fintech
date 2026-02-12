@@ -6,6 +6,7 @@ import { traceIdMiddleware } from './common/trace/trace.middleware';
 import { HttpStatus, ValidationError, ValidationPipe } from '@nestjs/common';
 import { AppException } from './common/errors/app.exception';
 import { ERROR_CODES } from './common/errors/error-codes';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
   function formatValidation(errors: ValidationError[]) {
@@ -15,7 +16,9 @@ async function bootstrap() {
       constraints: e.constraints ?? null,
     }));
   }
-  const app = await NestFactory.create(AppModule);
+  // Buffer logs true to avoid log init loss
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
   const config = app.get(ConfigService);
   const port = config.get<string>('PORT') ?? 3999;
   app.use(traceIdMiddleware);
