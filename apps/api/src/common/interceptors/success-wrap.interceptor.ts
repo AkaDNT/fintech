@@ -9,6 +9,24 @@ import { Observable, map } from 'rxjs';
 import { SKIP_WRAP_KEY } from './skip-wrap.decorator';
 import { getTraceId } from '@repo/shared';
 
+function normalizeJson(value: any): any {
+  if (typeof value === 'bigint') return value.toString();
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeJson);
+  }
+
+  if (value && typeof value === 'object') {
+    const out: any = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = normalizeJson(v);
+    }
+    return out;
+  }
+
+  return value;
+}
+
 @Injectable()
 export class SuccessWrapInterceptor implements NestInterceptor {
   constructor(private reflector: Reflector) {}
@@ -22,7 +40,7 @@ export class SuccessWrapInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map((data) => ({
-        data,
+        data: normalizeJson(data),
         traceId: getTraceId(),
       })),
     );

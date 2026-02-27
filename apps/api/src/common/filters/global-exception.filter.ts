@@ -25,6 +25,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const path = req.url;
     const method = req.method;
 
+    // Log toàn bộ exception
+    this.logger.error(
+      `[${traceId}] ${method} ${path} -> ${exception instanceof Error ? exception.stack : exception}`,
+    );
     //AppException: Business Errors
     if (exception instanceof AppException) {
       const status = exception.getStatus();

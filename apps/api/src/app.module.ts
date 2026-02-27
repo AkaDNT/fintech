@@ -11,6 +11,7 @@ import { getTraceId } from '@repo/shared';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { SuccessWrapInterceptor } from './common/interceptors/success-wrap.interceptor';
+import { WalletsModule } from './wallets/wallets.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SuccessWrapInterceptor } from './common/interceptors/success-wrap.inter
     PrismaModule,
     AuthModule,
     ReportsModule,
+    WalletsModule,
   ],
   controllers: [AppController],
   providers: [

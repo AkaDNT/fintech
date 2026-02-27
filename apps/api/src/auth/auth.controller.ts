@@ -18,12 +18,14 @@ import { LoginDto } from './dto/login.dto';
 import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
 import { JwtAccessGuard } from './jwt-access.guard';
+import { WalletsService } from 'src/wallets/wallets.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly walletsService: WalletsService,
   ) {}
   private setRefreshCookie(res: Response, token: string) {
     const days = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
@@ -52,6 +54,7 @@ export class AuthController {
       body.password,
       body.role,
     );
+    await this.walletsService.ensureWallets(user.id);
     return { user };
   }
 

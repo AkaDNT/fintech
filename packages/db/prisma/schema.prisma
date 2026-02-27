@@ -23,12 +23,49 @@ enum Role {
   ADMIN
 }
 
+enum Currency {
+  VND
+  USD
+}
+
+enum WalletStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum TxKind {
+  TRANSFER
+  ADJUSTMENT
+  TOPUP
+  PAYMENT
+  REFUND
+}
+
+enum TxStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+enum IdemStatus {
+  IN_PROGRESS
+  SUCCEEDED
+  FAILED
+}
+
 model User{
   id String @id @default(cuid())
   email String @unique
   passwordHash String
   status UserStatus @default(ACTIVE)
   role Role @default(USER)
+  wallet Wallet[]
   
   refreshToken RefreshToken[]
   createdAt DateTime @default(now())
@@ -56,4 +93,66 @@ model FileObject{
   size Int
   createdBy String?
   createdAt DateTime @default(now())
+}
+
+model Wallet {
+  id               String       @id @default(cuid())
+  userId           String
+  currency         Currency
+  status           WalletStatus @default(ACTIVE)
+
+  availableBalance BigInt       @default(0)
+  lockedBalance    BigInt       @default(0)
+
+  entries          LedgerEntry[]
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, currency])
+  @@index([userId])
+}
+
+model LedgerTransaction {
+  id        String    @id @default(cuid())
+  kind      TxKind
+  status    TxStatus
+  currency  Currency
+  amount    BigInt
+  reference String?
+  createdBy String?
+
+  entries   LedgerEntry[]
+  createdAt DateTime  @default(now())
+}
+
+model LedgerEntry {
+  id        String            @id @default(cuid())
+  txId      String
+  walletId  String
+  type      EntryType
+  amount    BigInt
+  currency  Currency
+
+  tx        LedgerTransaction @relation(fields: [txId], references: [id], onDelete: Cascade)
+  wallet    Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime          @default(now())
+
+  @@index([walletId, createdAt])
+  @@index([txId])
+}
+
+model IdempotencyKey {
+  key         String     @id
+  scope       String
+  status      IdemStatus @default(IN_PROGRESS)
+  requestHash String?
+  response    Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([scope, createdAt])
 }

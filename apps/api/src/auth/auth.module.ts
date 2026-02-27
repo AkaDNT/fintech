@@ -5,9 +5,10 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersService } from './users.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
+import { WalletsModule } from 'src/wallets/wallets.module';
 
 @Module({
-  imports: [PassportModule, JwtModule.register({})],
+  imports: [PassportModule, JwtModule.register({}), WalletsModule],
   controllers: [AuthController],
   providers: [AuthService, UsersService, JwtAccessStrategy],
   exports: [AuthService],
