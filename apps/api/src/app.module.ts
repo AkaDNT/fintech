@@ -12,6 +12,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { SuccessWrapInterceptor } from './common/interceptors/success-wrap.interceptor';
 import { WalletsModule } from './wallets/wallets.module';
+import { TransfersModule } from './transfers/transfers.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { WalletsModule } from './wallets/wallets.module';
     AuthModule,
     ReportsModule,
     WalletsModule,
+    TransfersModule,
   ],
   controllers: [AppController],
   providers: [
