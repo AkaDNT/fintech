@@ -26,4 +26,5 @@ export const ERROR_CODES = {
 
   // System/Concurrency errors
   IDEMPOTENCY_CONFLICT: 'IDEMPOTENCY_CONFLICT',
+  SYSTEM_WALLET_NOT_FOUND: 'SYSTEM_WALLET_NOT_FOUND',
 } as const;

@@ -13,6 +13,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { SuccessWrapInterceptor } from './common/interceptors/success-wrap.interceptor';
 import { WalletsModule } from './wallets/wallets.module';
 import { TransfersModule } from './transfers/transfers.module';
+import { AdminWalletsModule } from './admin-wallets/admin-wallets.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { TransfersModule } from './transfers/transfers.module';
     ReportsModule,
     WalletsModule,
     TransfersModule,
+    AdminWalletsModule,
   ],
   controllers: [AppController],
   providers: [

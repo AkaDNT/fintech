@@ -37,7 +37,7 @@ export class TransfersController {
     return this.transfers.createTransfer({
       idemKey,
       userId: req.user.sub,
-      toWalletId: dto.toWalletId,
+      toUserId: dto.toUserId,
       currency: dto.currency,
       amountStr: dto.amount,
     });

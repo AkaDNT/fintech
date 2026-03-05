@@ -1,9 +1,9 @@
-import { IsEnum, IsString, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
 import { Currency } from '@repo/db';
 
 export class CreateTransferDto {
   @IsString()
-  toWalletId: string;
+  toUserId: string;
 
   @IsEnum(Currency)
   currency: Currency;
@@ -14,5 +14,6 @@ export class CreateTransferDto {
   amount: string;
 
   @IsString()
+  @IsOptional()
   note?: string;
 }
