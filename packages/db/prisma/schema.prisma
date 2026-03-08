@@ -126,6 +126,8 @@ model LedgerTransaction {
 
   entries   LedgerEntry[]
   createdAt DateTime  @default(now())
+  @@unique([createdAt, id])
+  @@index([createdAt, id])
 }
 
 model LedgerEntry {

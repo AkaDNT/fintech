@@ -14,6 +14,7 @@ import { SuccessWrapInterceptor } from './common/interceptors/success-wrap.inter
 import { WalletsModule } from './wallets/wallets.module';
 import { TransfersModule } from './transfers/transfers.module';
 import { AdminWalletsModule } from './admin-wallets/admin-wallets.module';
+import { LedgerModule } from './ledger/ledger.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AdminWalletsModule } from './admin-wallets/admin-wallets.module';
     WalletsModule,
     TransfersModule,
     AdminWalletsModule,
+    LedgerModule,
   ],
   controllers: [AppController],
   providers: [
