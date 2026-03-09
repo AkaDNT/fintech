@@ -1,127 +1,90 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { runWithTraceId, getTraceId } from '@repo/shared';
-import { PrismaClient } from '@repo/db';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getTraceId, runWithTraceId } from '@repo/shared';
+import { JobHandler } from './ports/job-handler.port';
 
 @Injectable()
 export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ReportsWorker.name);
   private worker!: Worker;
-  private prisma = new PrismaClient();
-  private redis = new IORedis(process.env.REDIS_URL!, {
-    maxRetriesPerRequest: null,
-  });
-  private s3 = new S3Client({
-    region: 'us-east-1',
-    endpoint: process.env.MINIO_ENDPOINT,
-    credentials: {
-      accessKeyId: process.env.MINIO_ACCESS_KEY!,
-      secretAccessKey: process.env.MINIO_SECRET_KEY!,
-    },
-    forcePathStyle: true,
-  });
+
+  constructor(
+    @Inject('REPORTS_JOB_HANDLERS')
+    private readonly handlers: JobHandler[],
+  ) {}
 
   async onModuleInit() {
+    const redis = new IORedis(process.env.REDIS_URL!, {
+      maxRetriesPerRequest: null,
+    });
+
+    const handlerMap = new Map(
+      this.handlers.map((handler) => [handler.name, handler]),
+    );
+
     this.worker = new Worker(
       'reports',
       async (job) => {
         const traceId = job.data?.traceId ?? 'unknown';
 
         return runWithTraceId(traceId, async () => {
-          console.log(
+          this.logger.log(
             JSON.stringify({
-              level: 'info',
+              msg: 'reports_job_started',
               traceId: getTraceId(),
-              msg: 'job_start',
-              jobId: job.id,
+              jobId: String(job.id),
+              jobName: job.name,
             }),
           );
 
-          if (job.name !== 'USERS_CSV') return;
+          const handler = handlerMap.get(job.name);
 
-          const users = await this.prisma.user.findMany({
-            select: {
-              id: true,
-              email: true,
-              role: true,
-              status: true,
-              createdAt: true,
-            },
-            orderBy: { createdAt: 'desc' },
-            take: 5000,
-          });
+          if (!handler) {
+            this.logger.warn(
+              JSON.stringify({
+                msg: 'reports_job_handler_missing',
+                traceId: getTraceId(),
+                jobId: String(job.id),
+                jobName: job.name,
+              }),
+            );
 
-          const csv = toCsv(
-            users.map((u) => ({
-              id: u.id,
-              email: u.email,
-              role: u.role,
-              status: u.status,
-              createdAt: u.createdAt.toISOString(),
-            })),
-          );
+            return {
+              ok: false,
+              reason: `No handler for job ${job.name}`,
+            };
+          }
 
-          const buf = Buffer.from(csv, 'utf-8');
-          const objectKey = `reports/users/users-${Date.now()}.csv`;
+          const result = await handler.handle(job);
 
-          await this.s3.send(
-            new PutObjectCommand({
-              Bucket: process.env.MINIO_BUCKET!,
-              Key: objectKey,
-              Body: buf,
-              ContentType: 'text/csv',
-            }),
-          );
-
-          const file = await this.prisma.fileObject.create({
-            data: {
-              bucket: process.env.MINIO_BUCKET!,
-              objectKey,
-              mimeType: 'text/csv',
-              size: buf.length,
-            },
-          });
-
-          console.log(
+          this.logger.log(
             JSON.stringify({
-              level: 'info',
+              msg: 'reports_job_completed',
               traceId: getTraceId(),
-              msg: 'job_done',
-              jobId: job.id,
-              fileId: file.id,
+              jobId: String(job.id),
+              jobName: job.name,
             }),
           );
 
-          return {
-            fileId: file.id,
-            bucket: file.bucket,
-            objectKey: file.objectKey,
-          };
+          return result;
         });
       },
-      { connection: this.redis },
+      {
+        connection: redis,
+      },
     );
-
-    console.log('ReportsWorker started');
   }
 
   async onModuleDestroy() {
-    await this.worker?.close();
-    await this.redis?.quit();
-    await this.prisma?.$disconnect();
+    if (this.worker) {
+      await this.worker.close();
+    }
   }
-}
-
-function toCsv(rows: Array<Record<string, any>>) {
-  const headers = Object.keys(rows[0] || {});
-  const escape = (v: any) => {
-    const s = String(v ?? '');
-    const needs = s.includes(',') || s.includes('\n') || s.includes('"');
-    const out = s.replace(/"/g, '""');
-    return needs ? `"${out}"` : out;
-  };
-  const lines = [headers.join(',')];
-  for (const r of rows) lines.push(headers.map((h) => escape(r[h])).join(','));
-  return lines.join('\n');
 }

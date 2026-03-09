@@ -145,6 +145,7 @@ model LedgerEntry {
 
   @@index([walletId, createdAt])
   @@index([txId])
+  @@index([currency, walletId, type])
 }
 
 model IdempotencyKey {

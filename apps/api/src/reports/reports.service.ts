@@ -1,14 +1,15 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
-import { reportsQueue } from './reports.queue';
+import { Injectable, HttpStatus, Inject } from '@nestjs/common';
+import { REPORTS_QUEUE } from './reports.queue';
 import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
-import { getTraceId } from '@repo/shared';
+import { Queue } from 'bullmq';
+import { Currency } from '@repo/db';
 
 @Injectable()
 export class ReportsService {
-  async enqueueUsersCsv(date?: string | null) {
-    const traceId = getTraceId();
-    const job = await reportsQueue.add(
+  constructor(@Inject(REPORTS_QUEUE) private readonly reportsQueue: Queue) {}
+  async enqueueUsersCsv(traceId: string, date?: string | null) {
+    const job = await this.reportsQueue.add(
       'USERS_CSV',
       { date: date || null, traceId },
       {
@@ -22,8 +23,21 @@ export class ReportsService {
     return { jobId: job.id };
   }
 
+  enqueueReconcile(traceId: string, currency?: Currency) {
+    return this.reportsQueue.add(
+      'RECONCILE_WALLETS',
+      { traceId, currency: currency ?? null },
+      {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: { count: 1000 },
+        removeOnFail: { count: 5000 },
+      },
+    );
+  }
+
   async getJobStatus(id: string) {
-    const job = await reportsQueue.getJob(id);
+    const job = await this.reportsQueue.getJob(id);
     if (!job) {
       throw new AppException(
         { code: ERROR_CODES.JOB_NOT_FOUND, message: 'Job not found' },
@@ -33,10 +47,13 @@ export class ReportsService {
 
     const state = await job.getState();
     return {
+      id: String(job.id),
+      name: job.name,
       state,
-      jobProgress: job.progress,
-      failedReason: job.failedReason || null,
-      returnValue: job.returnvalue || null,
+      progress: job.progress ?? 0,
+      failedReason: job.failedReason ?? null,
+      returnValue: (job as any).returnvalue ?? null,
+      attemptsMade: job.attemptsMade,
     };
   }
 }

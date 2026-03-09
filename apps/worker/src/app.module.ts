@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ReportsWorker } from './reports/reports.worker';
+import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
-  providers: [ReportsWorker],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    ReportsModule,
+  ],
+  providers: [],
 })
 export class AppModule {}
