@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import bcrypt from 'bcryptjs';
 import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,63 @@ export class AuthService {
         expiresIn: `${days}d`,
       },
     );
+  }
+
+  async register(data: RegisterDto) {
+    const { email, password, confirmPassword } = { ...data };
+    if (confirmPassword !== password) {
+      throw new AppException(
+        {
+          code: ERROR_CODES.PASSWORD_MISMATCH,
+          message: 'Confirmation password does not match',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: await bcrypt.hash(password, 10),
+      },
+    });
+    const tokenRow = await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: 'tmp',
+        expiresAt: new Date(
+          Date.now() +
+            Number(process.env.JWT_REFRESH_TTL_DAYS!) * 60 * 60 * 24 * 1000,
+        ),
+      },
+    });
+    //sign refresh
+    const refresh = this.refreshToken(
+      { id: user.id, role: user.role },
+      tokenRow.id,
+    );
+
+    //hash refresh
+    const tokenHash = await bcrypt.hash(refresh, 10);
+
+    //update token hash
+    await this.prisma.refreshToken.update({
+      where: {
+        id: tokenRow.id,
+      },
+      data: {
+        tokenHash,
+      },
+    });
+
+    return {
+      accessToken: this.accessToken({ id: user.id, role: user.role }),
+      refreshToken: refresh,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    };
   }
 
   async login(email: string, password: string) {
