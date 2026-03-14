@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --font-heading: "Space Grotesk", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+
+  --color-app-bg: #f2f5f1;
+  --color-app-surface: #ffffff;
+  --color-app-surface-2: #f6faf3;
+  --color-app-fg: #112015;
+  --color-app-muted: #5d705f;
+  --color-app-border: #d4dfd0;
+  --color-app-primary: #14532d;
+  --color-app-primary-soft: #d6f2de;
+  --color-app-danger: #8f1329;
+  --shadow-soft: 0 12px 28px rgba(17, 32, 21, 0.08);
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+  --color-app: var(--color-app-bg);
+  --color-app-foreground: var(--color-app-fg);
+  --color-surface: var(--color-app-surface);
+  --color-surface-2: var(--color-app-surface-2);
+  --color-muted: var(--color-app-muted);
+  --color-border: var(--color-app-border);
+  --color-primary: var(--color-app-primary);
+  --color-primary-soft: var(--color-app-primary-soft);
+  --color-danger: var(--color-app-danger);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #d7f0dc 0%, transparent 60%),
+    radial-gradient(900px 400px at 100% 0%, #e7f5df 0%, transparent 55%),
+    var(--color-app-bg);
+  color: var(--color-app-fg);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card {
+  border: 1px solid var(--color-app-border);
+  background: var(--color-app-surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+}
