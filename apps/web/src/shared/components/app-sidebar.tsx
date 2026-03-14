@@ -4,9 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/shared/config/navigation";
 import { cn } from "@/shared/lib/utils";
+import { useAuthContext } from "@/providers/auth-provider";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { role } = useAuthContext();
+
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (!item.roles || item.roles.length === 0) return true;
+    if (!role) return false;
+    return item.roles.includes(role);
+  });
 
   return (
     <aside className="card h-fit p-3">
@@ -14,7 +22,7 @@ export function AppSidebar() {
         Navigation
       </p>
       <nav className="space-y-1">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link

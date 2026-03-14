@@ -10,15 +10,18 @@ export function currencyText(amountMinor: bigint, currency: string) {
   const fractionDigits = FRACTION_DIGITS[normalizedCurrency];
   const divisor = BigInt(10 ** fractionDigits);
 
-  const whole = amountMinor / divisor;
-  const fraction = amountMinor % divisor;
+  const isNegative = amountMinor < BigInt(0);
+  const absAmount = isNegative ? amountMinor * BigInt(-1) : amountMinor;
+  const whole = absAmount / divisor;
+  const fraction = absAmount % divisor;
 
-  const wholeText = Number(whole).toLocaleString();
+  const wholeText = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const sign = isNegative ? "-" : "";
 
   if (fractionDigits === 0) {
-    return `${wholeText} ${normalizedCurrency}`;
+    return `${sign}${wholeText} ${normalizedCurrency}`;
   }
 
   const fractionText = fraction.toString().padStart(fractionDigits, "0");
-  return `${wholeText}.${fractionText} ${normalizedCurrency}`;
+  return `${sign}${wholeText}.${fractionText} ${normalizedCurrency}`;
 }

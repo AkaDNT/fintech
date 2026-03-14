@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { useMe } from "@/modules/auth/hooks/use-me";
+import type { UserRole } from "@/shared/types/common.types";
 
 interface AuthContextValue {
   userId: string | null;
-  role: string | null;
+  role: UserRole | null;
   isAuthenticated: boolean;
 }
 

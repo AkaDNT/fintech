@@ -7,6 +7,7 @@ import { ENDPOINTS } from "@/shared/api/endpoints";
 import { LoadingState } from "@/shared/components/loading-state";
 import { ErrorState } from "@/shared/components/error-state";
 import { PageTitle } from "@/shared/components/page-title";
+import { RoleGuard } from "@/shared/components/role-guard";
 
 interface LedgerDetail {
   id: string;
@@ -52,32 +53,34 @@ export default function AdminLedgerTxPage() {
   const tx = txQuery.data;
 
   return (
-    <section className="space-y-4">
-      <PageTitle title="Ledger Transaction" subtitle={tx.id} />
-      <article className="card p-4">
-        <p className="text-sm">Kind: {tx.kind}</p>
-        <p className="text-sm">Status: {tx.status}</p>
-        <p className="text-sm">
-          Amount: {tx.amount} {tx.currency}
-        </p>
-        <p className="text-sm">Reference: {tx.reference ?? "-"}</p>
-      </article>
-      <article className="card p-4">
-        <h2 className="text-lg font-bold">Entries</h2>
-        <ul className="mt-3 space-y-2">
-          {tx.entries.map((entry) => (
-            <li
-              key={entry.id}
-              className="rounded-lg border border-border p-3 text-sm"
-            >
-              <p>
-                {entry.type} {entry.amount} {entry.currency}
-              </p>
-              <p className="text-muted">Wallet: {entry.walletId}</p>
-            </li>
-          ))}
-        </ul>
-      </article>
-    </section>
+    <RoleGuard allow={["ADMIN"]}>
+      <section className="space-y-4">
+        <PageTitle title="Ledger Transaction" subtitle={tx.id} />
+        <article className="card p-4">
+          <p className="text-sm">Kind: {tx.kind}</p>
+          <p className="text-sm">Status: {tx.status}</p>
+          <p className="text-sm">
+            Amount: {tx.amount} {tx.currency}
+          </p>
+          <p className="text-sm">Reference: {tx.reference ?? "-"}</p>
+        </article>
+        <article className="card p-4">
+          <h2 className="text-lg font-bold">Entries</h2>
+          <ul className="mt-3 space-y-2">
+            {tx.entries.map((entry) => (
+              <li
+                key={entry.id}
+                className="rounded-lg border border-border p-3 text-sm"
+              >
+                <p>
+                  {entry.type} {entry.amount} {entry.currency}
+                </p>
+                <p className="text-muted">Wallet: {entry.walletId}</p>
+              </li>
+            ))}
+          </ul>
+        </article>
+      </section>
+    </RoleGuard>
   );
 }

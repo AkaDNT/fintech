@@ -1,5 +1,8 @@
 export const ENDPOINTS = {
+  health: "/health",
   auth: {
+    createUser: "/auth/create-user",
+    register: "/auth/register",
     login: "/auth/login",
     refresh: "/auth/refresh",
     logout: "/auth/logout",
@@ -7,6 +10,7 @@ export const ENDPOINTS = {
   },
   wallets: {
     list: "/wallets",
+    ensureByUserId: (userId: string) => `/wallets/${userId}`,
     ledger: (walletId: string, cursor?: string | null, limit = 20) => {
       const params = new URLSearchParams();
       if (cursor) params.set("cursor", cursor);
