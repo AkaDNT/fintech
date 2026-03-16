@@ -19,6 +19,7 @@ import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
 import { JwtAccessGuard } from './jwt-access.guard';
 import { WalletsService } from 'src/wallets/wallets.service';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -64,6 +65,17 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(body.email, body.password);
+    this.setRefreshCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken, user: result.user };
+  }
+
+  @Post('/register')
+  async register(
+    @Body() body: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.register(body);
+    await this.walletsService.ensureWallets(result.user.id);
     this.setRefreshCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, user: result.user };
   }

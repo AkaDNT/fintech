@@ -3,6 +3,7 @@ import { Currency } from '@repo/db';
 import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { WalletErrors } from './errors/wallet-error.factory';
 
 @Injectable()
 export class WalletsService {
@@ -44,10 +45,7 @@ export class WalletsService {
     });
 
     if (!wallet || wallet.userId !== userId) {
-      throw new AppException(
-        { code: ERROR_CODES.WALLET_NOT_FOUND, message: 'Wallet not found' },
-        HttpStatus.NOT_FOUND,
-      );
+      throw WalletErrors.walletNotFound();
     }
 
     return wallet;
