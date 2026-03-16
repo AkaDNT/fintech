@@ -15,8 +15,13 @@ const bodyFont = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Fintech Console",
-  description: "Enterprise-grade wallet and ledger operations console",
+  title: "Yubeepay",
+  description: "Yubeepay enterprise wallet and payments console",
+  icons: {
+    icon: "/yubeepay-logo.svg",
+    shortcut: "/yubeepay-logo.svg",
+    apple: "/yubeepay-logo.svg",
+  },
 };
 
 export default function RootLayout({ children }: any) {
