@@ -17,11 +17,13 @@ export function AppSidebar() {
   });
 
   return (
-    <aside className="card h-fit p-3">
-      <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-        Navigation
-      </p>
-      <nav className="space-y-1">
+    <aside className="h-fit overflow-hidden rounded-[20px] border border-[#d9deea] bg-white shadow-[0_8px_24px_rgba(5,37,56,0.06)]">
+      <div className="border-b border-[#d9deea] bg-[#f3f5fa] px-4 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#5b667a]">
+          Menu
+        </p>
+      </div>
+      <nav className="space-y-0.5 p-2">
         {visibleItems.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
@@ -29,10 +31,10 @@ export function AppSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "block rounded-lg px-3 py-2 text-sm transition",
+                "block rounded-xl px-3 py-2.5 text-sm font-medium transition",
                 active
-                  ? "bg-primary text-white"
-                  : "text-app-foreground hover:bg-surface-2",
+                  ? "bg-[#052538] text-white shadow-[0_4px_10px_rgba(5,37,56,0.25)]"
+                  : "text-[#30384a] hover:bg-[#e8edf7]",
               )}
             >
               {item.label}

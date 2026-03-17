@@ -33,7 +33,7 @@ export default function WalletsPage() {
   }
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-6">
       <PageTitle title="Wallets" subtitle="Your balances across currencies" />
       <WalletList wallets={walletsQuery.data} />
     </section>

@@ -4,16 +4,18 @@
   --font-heading: "Space Grotesk", sans-serif;
   --font-body: "IBM Plex Sans", sans-serif;
 
-  --color-app-bg: #f2f5f1;
+  --color-app-bg: #f3f5fa;
   --color-app-surface: #ffffff;
-  --color-app-surface-2: #f6faf3;
-  --color-app-fg: #112015;
-  --color-app-muted: #5d705f;
-  --color-app-border: #d4dfd0;
-  --color-app-primary: #14532d;
-  --color-app-primary-soft: #d6f2de;
-  --color-app-danger: #8f1329;
-  --shadow-soft: 0 12px 28px rgba(17, 32, 21, 0.08);
+  --color-app-surface-2: #e8edf7;
+  --color-app-fg: #111827;
+  --color-app-muted: #5b667a;
+  --color-app-border: #d9deea;
+  --color-app-primary: #052538;
+  --color-app-primary-soft: #e8edf7;
+  --color-app-accent: #1f8265;
+  --color-app-danger: #be2b2b;
+  --shadow-soft: 0 8px 24px rgba(5, 37, 56, 0.08);
+  --shadow-card: 0 8px_20px rgba(15, 23, 42, 0.06);
 }
 
 @theme inline {
@@ -27,6 +29,7 @@
   --color-border: var(--color-app-border);
   --color-primary: var(--color-app-primary);
   --color-primary-soft: var(--color-app-primary-soft);
+  --color-accent: var(--color-app-accent);
   --color-danger: var(--color-app-danger);
 }
 
@@ -43,8 +46,8 @@ body {
   margin: 0;
   font-family: var(--font-body);
   background:
-    radial-gradient(1200px 500px at 10% -10%, #d7f0dc 0%, transparent 60%),
-    radial-gradient(900px 400px at 100% 0%, #e7f5df 0%, transparent 55%),
+    radial-gradient(1000px 400px at 5% -5%, #dce8f5 0%, transparent 60%),
+    radial-gradient(800px 350px at 100% 0%, #e0eaf5 0%, transparent 55%),
     var(--color-app-bg);
   color: var(--color-app-fg);
 }
@@ -68,6 +71,6 @@ a:not([class]) {
 .card {
   border: 1px solid var(--color-app-border);
   background: var(--color-app-surface);
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: var(--shadow-soft);
 }

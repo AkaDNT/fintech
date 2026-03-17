@@ -38,10 +38,10 @@ export default function DashboardPage() {
   const entries = Object.entries(totalByCurrency);
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-6">
       <PageTitle
         title="Dashboard"
-        subtitle="Quick overview of balances by currency"
+        subtitle="Quick overview of your balances by currency"
       />
 
       {entries.length === 0 ? (
@@ -52,14 +52,29 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {entries.map(([currency, amount]) => (
-            <article key={currency} className="card p-5">
-              <p className="text-sm text-muted">Available</p>
-              <h2 className="mt-2 text-3xl font-bold">
-                {currencyText(amount, currency)}
-              </h2>
-              <p className="mt-2 text-xs text-muted">
-                Real-time from wallet snapshots
-              </p>
+            <article
+              key={currency}
+              className="overflow-hidden rounded-[20px] border border-[#d9deea] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)]"
+            >
+              <div className="bg-[#052538] px-5 py-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-white/60">
+                  Currency
+                </p>
+                <h2 className="mt-0.5 text-lg font-bold text-white">
+                  {currency}
+                </h2>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#5b667a]">
+                  Total available
+                </p>
+                <p className="mt-1.5 text-3xl font-bold tracking-tight text-[#111827]">
+                  {currencyText(amount, currency)}
+                </p>
+                <p className="mt-2 text-xs text-[#5b667a]">
+                  Aggregated from all wallets
+                </p>
+              </div>
             </article>
           ))}
         </div>
