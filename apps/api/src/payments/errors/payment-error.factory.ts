@@ -92,4 +92,24 @@ export const PaymentErrors = {
       HttpStatus.BAD_REQUEST,
     );
   },
+
+  systemUserNotFound() {
+    return new AppException(
+      {
+        code: ERROR_CODES.SYSTEM_USER_NOT_FOUND,
+        message: 'System user not found',
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  },
+
+  systemWalletNotFound() {
+    return new AppException(
+      {
+        code: ERROR_CODES.SYSTEM_WALLET_NOT_FOUND,
+        message: 'System user not found',
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  },
 };

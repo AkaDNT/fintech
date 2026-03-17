@@ -1,7 +1,17 @@
-import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAccessGuard } from 'src/auth/jwt-access.guard';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { PaymentsService } from './payments.service';
+import { PaymentQueryDto } from './dto/payment-query.dto';
 
 @Controller('payments')
 @UseGuards(JwtAccessGuard)
@@ -35,5 +45,31 @@ export class PaymentsController {
       userId: req.user.sub,
       paymentId,
     });
+  }
+
+  @Post(':paymentId/cancel')
+  async cancel(@Req() req: any, @Param('paymentId') paymentId: string) {
+    return this.paymentsService.cancelPayment({
+      paymentId,
+      userId: req.user.sub,
+    });
+  }
+
+  @Post(':paymentId/refund')
+  async refund(@Req() req: any, @Param('paymentId') paymentId: string) {
+    return this.paymentsService.refundPayment({
+      paymentId,
+      userId: req.user.sub,
+    });
+  }
+
+  @Get()
+  listMine(@Req() req: any, @Query() query: PaymentQueryDto) {
+    return this.paymentsService.listMyPayments(req.user.sub, query);
+  }
+
+  @Get(':paymentId')
+  getMine(@Req() req: any, @Param('paymentId') paymentId: string) {
+    return this.paymentsService.getMyPayment(req.user.sub, paymentId);
   }
 }

@@ -16,6 +16,7 @@ import { TransfersModule } from './transfers/transfers.module';
 import { AdminWalletsModule } from './admin-wallets/admin-wallets.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PaymentsJobsModule } from './payments-jobs/payments-jobs.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { PaymentsModule } from './payments/payments.module';
     AdminWalletsModule,
     LedgerModule,
     PaymentsModule,
+    PaymentsJobsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -5,6 +5,7 @@ import { parseAmount } from 'src/common/money/amount';
 import { WalletErrors } from 'src/wallets/errors/wallet-error.factory';
 import { PaymentErrors } from './errors/payment-error.factory';
 import { PAYMENT_HOLD_TTL_MS } from './payments.constants';
+import { PaymentQueryDto } from './dto/payment-query.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -349,5 +350,205 @@ export class PaymentsService {
         },
       };
     });
+  }
+
+  async cancelPayment(params: { paymentId: string; userId: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({
+        where: { id: params.paymentId },
+        include: { wallet: true },
+      });
+
+      if (!payment || payment.userId !== params.userId) {
+        throw PaymentErrors.paymentNotFound();
+      }
+
+      if (payment.status !== 'HELD') {
+        throw PaymentErrors.paymentInvalidState('Payment is not in HELD state');
+      }
+
+      const hold = await tx.holdRecord.findUnique({
+        where: { paymentId: payment.id },
+      });
+
+      if (!hold || hold.status !== 'ACTIVE') {
+        throw PaymentErrors.holdNotFound();
+      }
+
+      await tx.wallet.update({
+        where: { id: payment.walletId },
+        data: {
+          availableBalance: payment.wallet.availableBalance + payment.amount,
+          lockedBalance: payment.wallet.lockedBalance - payment.amount,
+        },
+      });
+
+      await tx.holdRecord.update({
+        where: { paymentId: payment.id },
+        data: { status: 'RELEASED' },
+      });
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: 'CANCELED' },
+      });
+
+      return {
+        paymentId: payment.id,
+        status: 'CANCELED',
+        amount: payment.amount.toString(),
+        currency: payment.currency,
+      };
+    });
+  }
+
+  async refundPayment(params: { paymentId: string; userId: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({
+        where: { id: params.paymentId },
+        include: { wallet: true },
+      });
+
+      if (!payment || payment.userId !== params.userId) {
+        throw PaymentErrors.paymentNotFound();
+      }
+
+      if (payment.status === 'REFUNDED') {
+        throw PaymentErrors.paymentAlreadyRefunded();
+      }
+
+      if (payment.status !== 'CAPTURED') {
+        throw PaymentErrors.refundNotAllowed();
+      }
+
+      const systemUser = await tx.user.findUnique({
+        where: { email: 'system@local.test' },
+        select: { id: true },
+      });
+
+      if (!systemUser) {
+        throw PaymentErrors.systemUserNotFound();
+      }
+
+      const systemWallet = await tx.wallet.findUnique({
+        where: {
+          userId_currency: {
+            userId: systemUser.id,
+            currency: payment.currency,
+          },
+        },
+      });
+
+      if (!systemWallet) {
+        throw PaymentErrors.systemWalletNotFound();
+      }
+
+      await tx.wallet.update({
+        where: { id: payment.walletId },
+        data: {
+          availableBalance: payment.wallet.availableBalance + payment.amount,
+        },
+      });
+
+      await tx.wallet.update({
+        where: { id: systemWallet.id },
+        data: {
+          availableBalance: systemWallet.availableBalance - payment.amount,
+        },
+      });
+
+      const ledgerTx = await tx.ledgerTransaction.create({
+        data: {
+          kind: 'REFUND',
+          status: 'SUCCEEDED',
+          currency: payment.currency,
+          amount: payment.amount,
+          reference: payment.merchantRef ?? payment.id,
+          createdBy: payment.userId,
+          entries: {
+            create: [
+              {
+                walletId: systemWallet.id,
+                type: 'DEBIT',
+                amount: payment.amount,
+                currency: payment.currency,
+              },
+              {
+                walletId: payment.walletId,
+                type: 'CREDIT',
+                amount: payment.amount,
+                currency: payment.currency,
+              },
+            ],
+          },
+        },
+        select: { id: true, createdAt: true },
+      });
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'REFUNDED',
+        },
+      });
+
+      return {
+        paymentId: payment.id,
+        status: 'REFUNDED',
+        refundTxId: ledgerTx.id,
+        amount: payment.amount.toString(),
+        createdAt: ledgerTx.createdAt.toISOString(),
+      };
+    });
+  }
+
+  async listMyPayments(userId: string, query: PaymentQueryDto) {
+    return this.prisma.payment.findMany({
+      where: {
+        userId,
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.currency ? { currency: query.currency } : {}),
+        ...(query.merchantRef ? { merchantRef: query.merchantRef } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        walletId: true,
+        currency: true,
+        amount: true,
+        status: true,
+        merchantRef: true,
+        externalRef: true,
+        description: true,
+        ledgerTxId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async getMyPayment(userId: string, paymentId: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id: paymentId, userId },
+      select: {
+        id: true,
+        walletId: true,
+        currency: true,
+        amount: true,
+        status: true,
+        merchantRef: true,
+        externalRef: true,
+        description: true,
+        ledgerTxId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!payment) {
+      throw PaymentErrors.paymentNotFound();
+    }
+
+    return payment;
   }
 }
