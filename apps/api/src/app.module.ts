@@ -17,6 +17,7 @@ import { AdminWalletsModule } from './admin-wallets/admin-wallets.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PaymentsJobsModule } from './payments-jobs/payments-jobs.module';
+import { AdminPaymentsModule } from './admin-payments/admin-payments.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { PaymentsJobsModule } from './payments-jobs/payments-jobs.module';
     LedgerModule,
     PaymentsModule,
     PaymentsJobsModule,
+    AdminPaymentsModule,
   ],
   controllers: [AppController],
   providers: [

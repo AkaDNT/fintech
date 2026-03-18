@@ -6,6 +6,10 @@ import { WalletErrors } from 'src/wallets/errors/wallet-error.factory';
 import { PaymentErrors } from './errors/payment-error.factory';
 import { PAYMENT_HOLD_TTL_MS } from './payments.constants';
 import { PaymentQueryDto } from './dto/payment-query.dto';
+import {
+  createPaymentOutboxEvent,
+  PAYMENT_EVENTS,
+} from './outbox/payment-outbox.helper';
 
 @Injectable()
 export class PaymentsService {
@@ -168,6 +172,16 @@ export class PaymentsService {
           currency: true,
           status: true,
         },
+      });
+
+      await createPaymentOutboxEvent(tx, {
+        eventType: PAYMENT_EVENTS.HELD,
+        paymentId: payment.id,
+        userId: payment.userId,
+        walletId: payment.walletId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'HELD',
       });
 
       return {
@@ -336,6 +350,19 @@ export class PaymentsService {
         },
       });
 
+      await createPaymentOutboxEvent(tx, {
+        eventType: PAYMENT_EVENTS.CAPTURED,
+        paymentId: payment.id,
+        userId: payment.userId,
+        walletId: payment.walletId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'CAPTURED',
+        extra: {
+          ledgerTxId: ledgerTx.id,
+        },
+      });
+
       return {
         paymentId: updatedPayment.id,
         walletId: updatedPayment.walletId,
@@ -391,6 +418,16 @@ export class PaymentsService {
       await tx.payment.update({
         where: { id: payment.id },
         data: { status: 'CANCELED' },
+      });
+
+      await createPaymentOutboxEvent(tx, {
+        eventType: PAYMENT_EVENTS.CANCELED,
+        paymentId: payment.id,
+        userId: payment.userId,
+        walletId: payment.walletId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'CANCELED',
       });
 
       return {
@@ -489,6 +526,19 @@ export class PaymentsService {
         where: { id: payment.id },
         data: {
           status: 'REFUNDED',
+        },
+      });
+
+      await createPaymentOutboxEvent(tx, {
+        eventType: PAYMENT_EVENTS.REFUNDED,
+        paymentId: payment.id,
+        userId: payment.userId,
+        walletId: payment.walletId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: 'REFUNDED',
+        extra: {
+          refundTxId: ledgerTx.id,
         },
       });
 
