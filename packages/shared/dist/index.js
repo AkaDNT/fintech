@@ -15,3 +15,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./context/als"), exports);
+__exportStar(require("./audit/create-audit-log"), exports);
+__exportStar(require("./audit/audit.types"), exports);

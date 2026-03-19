@@ -10,6 +10,12 @@ import {
   createPaymentOutboxEvent,
   PAYMENT_EVENTS,
 } from './outbox/payment-outbox.helper';
+import {
+  AUDIT_ACTIONS,
+  AUDIT_ACTOR_TYPES,
+  createAuditLog,
+  getTraceId,
+} from '@repo/shared';
 
 @Injectable()
 export class PaymentsService {
@@ -182,6 +188,29 @@ export class PaymentsService {
         amount: payment.amount,
         currency: payment.currency,
         status: 'HELD',
+      });
+
+      await createAuditLog(tx, {
+        actorType: AUDIT_ACTOR_TYPES.USER,
+        actorId: params.userId,
+        action: AUDIT_ACTIONS.PAYMENT_HOLD,
+        entityType: 'payment',
+        entityId: payment.id,
+        before: {
+          paymentStatus: 'CREATED',
+          availableBalance: payment.wallet.availableBalance.toString(),
+          lockedBalance: payment.wallet.lockedBalance.toString(),
+        },
+        after: {
+          paymentStatus: 'HELD',
+          availableBalance: updatedWallet.availableBalance.toString(),
+          lockedBalance: updatedWallet.lockedBalance.toString(),
+        },
+        metadata: {
+          walletId: payment.walletId,
+          holdId: holdRecord.id,
+        },
+        traceId: getTraceId(),
       });
 
       return {
@@ -363,6 +392,28 @@ export class PaymentsService {
         },
       });
 
+      await createAuditLog(tx, {
+        actorType: AUDIT_ACTOR_TYPES.USER,
+        actorId: params.userId,
+        action: AUDIT_ACTIONS.PAYMENT_CAPTURE,
+        entityType: 'payment',
+        entityId: payment.id,
+        before: {
+          paymentStatus: 'HELD',
+          lockedBalance: payment.wallet.lockedBalance.toString(),
+        },
+        after: {
+          paymentStatus: 'CAPTURED',
+          lockedBalance: updatedUserWallet.lockedBalance.toString(),
+        },
+        metadata: {
+          walletId: payment.walletId,
+          holdId: payment.holdRecord.id,
+          ledgerTxId: ledgerTx.id,
+        },
+        traceId: getTraceId(),
+      });
+
       return {
         paymentId: updatedPayment.id,
         walletId: updatedPayment.walletId,
@@ -428,6 +479,28 @@ export class PaymentsService {
         amount: payment.amount,
         currency: payment.currency,
         status: 'CANCELED',
+      });
+
+      await createAuditLog(tx, {
+        actorType: AUDIT_ACTOR_TYPES.USER,
+        actorId: params.userId,
+        action: AUDIT_ACTIONS.PAYMENT_CANCEL,
+        entityType: 'payment',
+        entityId: payment.id,
+        before: {
+          paymentStatus: 'HELD',
+          holdStatus: 'ACTIVE',
+          availableBalance: payment.wallet.availableBalance.toString(),
+          lockedBalance: payment.wallet.lockedBalance.toString(),
+        },
+        after: {
+          paymentStatus: 'CANCELED',
+          holdStatus: 'RELEASED',
+        },
+        metadata: {
+          walletId: payment.walletId,
+        },
+        traceId: getTraceId(),
       });
 
       return {
@@ -540,6 +613,25 @@ export class PaymentsService {
         extra: {
           refundTxId: ledgerTx.id,
         },
+      });
+
+      await createAuditLog(tx, {
+        actorType: AUDIT_ACTOR_TYPES.USER,
+        actorId: params.userId,
+        action: AUDIT_ACTIONS.PAYMENT_REFUND,
+        entityType: 'payment',
+        entityId: payment.id,
+        before: {
+          paymentStatus: 'CAPTURED',
+        },
+        after: {
+          paymentStatus: 'REFUNDED',
+        },
+        metadata: {
+          walletId: payment.walletId,
+          refundTxId: ledgerTx.id,
+        },
+        traceId: getTraceId(),
       });
 
       return {

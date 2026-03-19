@@ -1,4 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  AUDIT_ACTIONS,
+  AUDIT_ACTOR_TYPES,
+  createAuditLog,
+  getTraceId,
+} from '@repo/shared';
 import { Job } from 'bullmq';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -52,6 +58,29 @@ export class ExpirePaymentHoldsHandler {
         await tx.payment.update({
           where: { id: payment.id },
           data: { status: 'CANCELED' },
+        });
+
+        await createAuditLog(tx, {
+          actorType: AUDIT_ACTOR_TYPES.SYSTEM,
+          actorId: null,
+          action: AUDIT_ACTIONS.PAYMENT_EXPIRE_HOLD,
+          entityType: 'payment',
+          entityId: payment.id,
+          before: {
+            paymentStatus: 'HELD',
+            holdStatus: 'ACTIVE',
+          },
+          after: {
+            paymentStatus: 'CANCELED',
+            holdStatus: 'EXPIRED',
+          },
+          metadata: {
+            walletId: wallet.id,
+            holdId: hold.id,
+            jobName: job.name,
+            jobId: String(job.id),
+          },
+          traceId: getTraceId(),
         });
 
         return true;

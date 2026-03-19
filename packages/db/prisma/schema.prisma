@@ -80,6 +80,19 @@ enum HoldStatus {
   EXPIRED
 }
 
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
+
+enum AuditActorType {
+  USER
+  ADMIN
+  SYSTEM
+}
+
 model User{
   id String @id @default(cuid())
   email String @unique
@@ -226,4 +239,42 @@ model HoldRecord {
 
   @@index([walletId, status])
   @@index([status, expiresAt])
+}
+
+model OutboxEvent {
+  id            String       @id @default(cuid())
+  aggregateType String
+  aggregateId   String
+  eventType     String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now())
+  publishedAt   DateTime?
+  lastError     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId])
+  @@index([eventType, createdAt])
+}
+
+model AuditLog {
+  id         String         @id @default(cuid())
+  actorType  AuditActorType
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  metadata   Json?
+  traceId    String?
+  createdAt  DateTime       @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([traceId])
 }
