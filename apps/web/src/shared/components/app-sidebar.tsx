@@ -11,6 +11,9 @@ export function AppSidebar() {
   const { role } = useAuthContext();
 
   const visibleItems = NAV_ITEMS.filter((item) => {
+    const isAdminItem = item.href.startsWith("/admin");
+
+    if (isAdminItem && role !== "ADMIN") return false;
     if (!item.roles || item.roles.length === 0) return true;
     if (!role) return false;
     return item.roles.includes(role);

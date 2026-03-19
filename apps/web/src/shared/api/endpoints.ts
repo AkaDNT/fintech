@@ -21,7 +21,21 @@ export const ENDPOINTS = {
   transfers: {
     create: "/transfers",
   },
+  payments: {
+    list: "/payments",
+    createIntent: "/payments/intents",
+    detail: (paymentId: string) => `/payments/${paymentId}`,
+    hold: (paymentId: string) => `/payments/${paymentId}/hold`,
+    capture: (paymentId: string) => `/payments/${paymentId}/capture`,
+    cancel: (paymentId: string) => `/payments/${paymentId}/cancel`,
+    refund: (paymentId: string) => `/payments/${paymentId}/refund`,
+  },
   admin: {
+    payments: {
+      list: "/admin/payments",
+      detail: (paymentId: string) => `/admin/payments/${paymentId}`,
+      expireHolds: "/admin/payments/expire-holds/run",
+    },
     wallets: {
       credit: (walletId: string) => `/admin/wallets/${walletId}/credit`,
       debit: (walletId: string) => `/admin/wallets/${walletId}/debit`,

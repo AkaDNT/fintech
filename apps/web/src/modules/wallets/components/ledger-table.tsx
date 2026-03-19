@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useAuthContext } from "@/providers/auth-provider";
 import type { WalletLedgerDto } from "@/modules/wallets/types/wallet.types";
 
 export function LedgerTable({ ledger }: { ledger: WalletLedgerDto }) {
+  const { role } = useAuthContext();
+  const canViewAdminLedger = role === "ADMIN";
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-separate border-spacing-y-2">
@@ -18,9 +24,16 @@ export function LedgerTable({ ledger }: { ledger: WalletLedgerDto }) {
           {ledger.items.map((tx) => (
             <tr key={tx.id} className="card">
               <td className="px-3 py-3 text-sm font-semibold">
-                <Link href={`/admin/ledger/${tx.id}`} className="text-primary">
-                  {tx.id}
-                </Link>
+                {canViewAdminLedger ? (
+                  <Link
+                    href={`/admin/ledger/${tx.id}`}
+                    className="text-primary"
+                  >
+                    {tx.id}
+                  </Link>
+                ) : (
+                  <span>{tx.id}</span>
+                )}
               </td>
               <td className="px-3 py-3 text-sm">{tx.kind}</td>
               <td className="px-3 py-3 text-sm">

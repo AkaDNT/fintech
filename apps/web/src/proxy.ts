@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_PREFIX = ["/dashboard", "/wallets", "/transfer", "/admin"];
+const PROTECTED_PREFIX = [
+  "/dashboard",
+  "/wallets",
+  "/payments",
+  "/transfer",
+  "/admin",
+];
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const parts = token.split(".");
@@ -20,10 +26,10 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const accessToken = request.cookies.get("access_token")?.value;
+  const payload = accessToken ? decodeJwtPayload(accessToken) : null;
 
   if (pathname === "/") {
     if (accessToken) {
-      const payload = decodeJwtPayload(accessToken);
       if (payload?.role === "ADMIN") {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -40,6 +46,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  if (pathname.startsWith("/admin") && payload?.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/wallets", request.url));
+  }
+
   return NextResponse.next();
 }
 
@@ -48,6 +58,7 @@ export const config = {
     "/",
     "/dashboard/:path*",
     "/wallets/:path*",
+    "/payments/:path*",
     "/transfer/:path*",
     "/admin/:path*",
   ],

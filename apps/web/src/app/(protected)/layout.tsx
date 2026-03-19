@@ -1,14 +1,12 @@
 "use client";
 
 import { AppShell } from "@/shared/components/app-shell";
-import { useMe } from "@/modules/auth/hooks/use-me";
 import { LoadingState } from "@/shared/components/loading-state";
-import { ErrorState } from "@/shared/components/error-state";
-import { useRouter } from "next/navigation";
+import { FriendlyRedirectState } from "@/shared/components/friendly-redirect-state";
+import { useAuthContext } from "@/providers/auth-provider";
 
 export default function ProtectedLayout({ children }: any) {
-  const router = useRouter();
-  const { isLoading, isError, error, refetch, data } = useMe();
+  const { isLoading, isError, error, isAuthenticated } = useAuthContext();
 
   if (isLoading) {
     return <LoadingState label="Validating session..." />;
@@ -16,22 +14,23 @@ export default function ProtectedLayout({ children }: any) {
 
   if (isError) {
     return (
-      <ErrorState
-        title="Unable to validate session"
-        description={error?.message ?? "Please login again"}
-        actionLabel="Try again"
-        onAction={refetch}
+      <FriendlyRedirectState
+        badge="Session Error"
+        title="Unable to verify your session"
+        description={
+          error?.message ??
+          "We could not validate your credentials at this time. You will be redirected to landing shortly."
+        }
       />
     );
   }
 
-  if (!data) {
+  if (!isAuthenticated) {
     return (
-      <ErrorState
-        title="Session expired"
-        description="Please login again to continue."
-        actionLabel="Go to login"
-        onAction={() => router.replace("/login")}
+      <FriendlyRedirectState
+        badge="Session Expired"
+        title="Your session has ended"
+        description="Please sign in again to continue using your dashboard. We are taking you back to landing page now."
       />
     );
   }

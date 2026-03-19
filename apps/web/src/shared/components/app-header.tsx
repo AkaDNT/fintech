@@ -7,7 +7,9 @@ import Image from "next/image";
 const TITLE_BY_PREFIX: Array<{ prefix: string; title: string }> = [
   { prefix: "/dashboard", title: "Dashboard" },
   { prefix: "/wallets", title: "Wallets" },
+  { prefix: "/payments", title: "Payments" },
   { prefix: "/transfer", title: "Transfer" },
+  { prefix: "/admin/payments", title: "Admin Payments" },
   { prefix: "/admin/reports", title: "Admin Reports" },
   { prefix: "/admin/users", title: "Admin Users" },
   { prefix: "/admin/ledger", title: "Ledger Detail" },

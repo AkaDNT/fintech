@@ -1,9 +1,11 @@
 "use client";
 
-import { useMe } from "@/modules/auth/hooks/use-me";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ErrorState } from "@/shared/components/error-state";
 import { LoadingState } from "@/shared/components/loading-state";
 import type { UserRole } from "@/shared/types/common.types";
+import { useAuthContext } from "@/providers/auth-provider";
 
 interface RoleGuardProps {
   allow: UserRole[];
@@ -11,7 +13,18 @@ interface RoleGuardProps {
 }
 
 export function RoleGuard({ allow, children }: RoleGuardProps) {
-  const { data, isLoading, isError, error } = useMe();
+  const router = useRouter();
+  const { role, isLoading, isError, error, isAuthenticated } = useAuthContext();
+
+  const isAllowed = Boolean(isAuthenticated && role && allow.includes(role));
+
+  useEffect(() => {
+    if (isLoading || isError) return;
+
+    if (!isAllowed) {
+      router.replace("/wallets");
+    }
+  }, [isAllowed, isError, isLoading, router]);
 
   if (isLoading) {
     return <LoadingState label="Checking permissions..." />;
@@ -26,13 +39,8 @@ export function RoleGuard({ allow, children }: RoleGuardProps) {
     );
   }
 
-  if (!data || !allow.includes(data.role)) {
-    return (
-      <ErrorState
-        title="Forbidden"
-        description="You do not have permission to access this resource."
-      />
-    );
+  if (!isAllowed) {
+    return <LoadingState label="Redirecting..." />;
   }
 
   return <>{children}</>;
