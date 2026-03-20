@@ -11,7 +11,11 @@ export default function SignupPage() {
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-sm flex-col justify-center">
         {/* Logo */}
-        <div className="mb-8 flex items-center gap-2.5">
+        <Link
+          href="/"
+          className="mb-8 inline-flex w-fit items-center gap-2.5 rounded-lg outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#9ee9c2]/70"
+          aria-label="Back to landing page"
+        >
           <Image
             src="/yubeepay-logo.svg"
             alt="Yubeepay"
@@ -22,7 +26,7 @@ export default function SignupPage() {
           <span className="text-xl font-bold tracking-tight text-[#9ee9c2]">
             Yubeepay
           </span>
-        </div>
+        </Link>
 
         {/* Card */}
         <section className="overflow-hidden rounded-[22px] border border-white/10 bg-white shadow-[0_28px_80px_rgba(3,25,39,0.5)]">
@@ -36,15 +40,6 @@ export default function SignupPage() {
           </header>
           <div className="px-7 py-6">
             <SignupForm />
-            <p className="mt-5 text-center text-sm text-[#5b667a]">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-semibold text-[#052538] underline-offset-2 hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
           </div>
         </section>
       </div>

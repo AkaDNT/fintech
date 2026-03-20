@@ -26,10 +26,15 @@ export function WalletCard({ wallet }: { wallet: Wallet }) {
           Available balance
         </p>
         <p className="mt-1.5 text-3xl font-bold tracking-tight text-[#111827]">
-          {currencyText(wallet.availableBalance, wallet.currency)}
+          {currencyText(wallet.availableBalance, wallet.currency, {
+            unit: "major",
+          })}
         </p>
         <p className="mt-2 text-xs text-[#5b667a]">
-          Locked: {currencyText(wallet.lockedBalance, wallet.currency)}
+          Locked:{" "}
+          {currencyText(wallet.lockedBalance, wallet.currency, {
+            unit: "major",
+          })}
         </p>
         <div className="mt-4 border-t border-[#d9deea] pt-3">
           <Link

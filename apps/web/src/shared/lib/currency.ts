@@ -5,10 +5,15 @@ const FRACTION_DIGITS: Record<Currency, number> = {
   USD: 2,
 };
 
-export function currencyText(amountMinor: bigint, currency: string) {
+export function currencyText(
+  amountMinor: bigint,
+  currency: string,
+  options?: { unit?: "minor" | "major" },
+) {
   const normalizedCurrency = (currency === "USD" ? "USD" : "VND") as Currency;
   const fractionDigits = FRACTION_DIGITS[normalizedCurrency];
-  const divisor = BigInt(10 ** fractionDigits);
+  const isMajorUnit = options?.unit === "major";
+  const divisor = isMajorUnit ? BigInt(1) : BigInt(10 ** fractionDigits);
 
   const isNegative = amountMinor < BigInt(0);
   const absAmount = isNegative ? amountMinor * BigInt(-1) : amountMinor;
