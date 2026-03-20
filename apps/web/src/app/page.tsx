@@ -1,8 +1,14 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, type Variants } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  AnimatePresence,
+  type Variants,
+} from "framer-motion";
 import {
   CUSTOMER_REVIEWS_SEED,
   FEATURED_REVIEW_INDEX,
@@ -92,7 +98,7 @@ const steps = [
       "Create your account in seconds and unlock all the features waiting for you.",
     image:
       "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=1200&q=80",
-    alt: "User signing up on mobile",
+    alt: "User signing up",
   },
   {
     step: "Step 2",
@@ -122,11 +128,66 @@ const stats = [
 
 export default function HomePage() {
   const totalReviews = CUSTOMER_REVIEWS_SEED.length;
-  const featuredIndex = FEATURED_REVIEW_INDEX % totalReviews;
-  const featuredReview = CUSTOMER_REVIEWS_SEED[featuredIndex];
+  const initialReviewIndex = FEATURED_REVIEW_INDEX % totalReviews;
+  const shouldReduceMotion = useReducedMotion();
+
+  const [activeIndex, setActiveIndex] = useState(initialReviewIndex);
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  useEffect(() => {
+    if (totalReviews <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setDirection(1);
+      setActiveIndex((prev) => (prev + 1) % totalReviews);
+    }, 4500);
+
+    return () => window.clearInterval(timer);
+  }, [totalReviews]);
+
+  const paginate = (nextDirection: 1 | -1) => {
+    setDirection(nextDirection);
+    setActiveIndex(
+      (prev) => (prev + nextDirection + totalReviews) % totalReviews,
+    );
+  };
+
+  const jumpTo = (index: number) => {
+    if (index === activeIndex) return;
+    setDirection(index > activeIndex ? 1 : -1);
+    setActiveIndex(index);
+  };
+
+  const featuredReview = CUSTOMER_REVIEWS_SEED[activeIndex];
   const leftReview =
-    CUSTOMER_REVIEWS_SEED[(featuredIndex - 1 + totalReviews) % totalReviews];
-  const rightReview = CUSTOMER_REVIEWS_SEED[(featuredIndex + 1) % totalReviews];
+    CUSTOMER_REVIEWS_SEED[(activeIndex - 1 + totalReviews) % totalReviews];
+  const rightReview = CUSTOMER_REVIEWS_SEED[(activeIndex + 1) % totalReviews];
+
+  const reviewSlideVariants = {
+    enter: (dir: number) => ({
+      x: shouldReduceMotion ? 0 : dir > 0 ? 90 : -90,
+      opacity: shouldReduceMotion ? 1 : 0,
+      scale: shouldReduceMotion ? 1 : 0.985,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.55,
+        ease: EASE,
+      },
+    },
+    exit: (dir: number) => ({
+      x: shouldReduceMotion ? 0 : dir > 0 ? -90 : 90,
+      opacity: shouldReduceMotion ? 1 : 0,
+      scale: shouldReduceMotion ? 1 : 0.985,
+      transition: {
+        duration: shouldReduceMotion ? 0 : 0.45,
+        ease: EASE,
+      },
+    }),
+  };
 
   return (
     <main className="min-h-screen bg-[#031a29] px-2 py-2 sm:px-3 sm:py-3">
@@ -429,7 +490,7 @@ export default function HomePage() {
                   className="absolute bottom-[12%] right-[2%] z-20 w-42.5 rotate-6 rounded-[28px] border border-white/20 bg-[#d3ff57] px-5 py-8 text-center text-[#12391f] shadow-[0_24px_44px_rgba(0,0,0,0.22)]"
                 >
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#1f4c2d]/70">
-                    Mobile-first
+                    Web-first
                   </p>
                   <p className="mt-2 text-3xl font-black">App</p>
                 </motion.div>
@@ -486,23 +547,23 @@ export default function HomePage() {
                 <div className="grid grid-cols-[1fr_auto] gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between rounded-2xl border border-[#e2e8f0] px-4 py-3 text-sm">
-                      <span className="font-semibold">INR</span>
-                      <span className="text-[#4b5563]">200</span>
+                      <span className="font-semibold">VND</span>
+                      <span className="text-[#4b5563]">200,000</span>
                     </div>
                     <div className="flex items-center justify-between rounded-2xl border border-[#e2e8f0] px-4 py-3 text-sm">
                       <span className="font-semibold">USD</span>
-                      <span className="text-[#4b5563]">4.758</span>
+                      <span className="text-[#4b5563]">14.758</span>
                     </div>
-                    <div className="flex items-center justify-between rounded-2xl border border-[#e2e8f0] px-4 py-3 text-sm">
+                    {/* <div className="flex items-center justify-between rounded-2xl border border-[#e2e8f0] px-4 py-3 text-sm">
                       <span className="font-semibold">EUR</span>
                       <span className="text-[#4b5563]">1.218</span>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-11 w-11 rounded-full bg-[linear-gradient(145deg,#ffd9c8,#f1a37f)]" />
                     <div className="h-11 w-11 rounded-full bg-[linear-gradient(145deg,#d8fddb,#6de98c)]" />
-                    <div className="h-11 w-11 rounded-full bg-[linear-gradient(145deg,#dce7ff,#97b5ff)]" />
+                    {/* <div className="h-11 w-11 rounded-full bg-[linear-gradient(145deg,#dce7ff,#97b5ff)]" /> */}
                   </div>
                 </div>
 
@@ -511,7 +572,7 @@ export default function HomePage() {
                 </button>
               </div>
 
-              <h3 className="mt-6 text-[30px] font-bold tracking-[-0.02em]">
+              <h3 className="mt-10 text-[30px] font-bold tracking-[-0.02em]">
                 Multi Currency Support
               </h3>
               <p className="mt-3 max-w-md text-sm leading-[1.8] text-[#5b667a]">
@@ -521,7 +582,7 @@ export default function HomePage() {
               </p>
             </motion.article>
 
-            <div className="grid gap-5 lg:col-span-4">
+            <div className="grid gap-6 lg:col-span-4 mt-0 lg:mt-6">
               {featureCards.slice(0, 2).map((feature, index) => (
                 <motion.article
                   key={feature.title}
@@ -684,110 +745,97 @@ export default function HomePage() {
               Customer reviews about Yubeepay
             </motion.h2>
 
-            <div className="relative mx-auto mt-8 max-w-6xl">
-              <div className="hidden items-center justify-between gap-5 lg:flex">
-                <motion.article
-                  initial="hidden"
-                  whileInView="show"
-                  viewport={{ once: true, amount: 0.25 }}
-                  variants={scaleIn}
-                  custom={0.05}
-                  whileHover={{ y: -6, opacity: 1 }}
-                  className="w-[27%] rounded-3xl border border-[#e1e6f0] bg-white/70 p-6 opacity-60 shadow-[0_12px_28px_rgba(15,23,42,0.04)] backdrop-blur-sm"
+            <div className="relative mx-auto mt-8 max-w-6xl overflow-hidden">
+              <AnimatePresence initial={false} mode="wait" custom={direction}>
+                <motion.div
+                  key={activeIndex}
+                  custom={direction}
+                  variants={reviewSlideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
                 >
-                  <p className="text-sm leading-[1.9] text-[#6a7488]">
-                    {leftReview.review}
-                  </p>
-                  <div className="mt-5 flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#052538] text-xs font-bold text-white">
-                      {leftReview.avatarText}
-                    </span>
-                    <p className="text-sm font-semibold text-[#4a5568]">
-                      {leftReview.name}
-                    </p>
+                  <div className="hidden items-center justify-between gap-5 lg:flex">
+                    <article className="w-[27%] rounded-3xl border border-[#e1e6f0] bg-white/70 p-6 opacity-60 shadow-[0_12px_28px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+                      <p className="text-sm leading-[1.9] text-[#6a7488]">
+                        {leftReview.review}
+                      </p>
+                      <div className="mt-5 flex items-center gap-3">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#052538] text-xs font-bold text-white">
+                          {leftReview.avatarText}
+                        </span>
+                        <p className="text-sm font-semibold text-[#4a5568]">
+                          {leftReview.name}
+                        </p>
+                      </div>
+                    </article>
+
+                    <article className="relative w-[46%] overflow-hidden rounded-[28px] border border-[#d9deea] bg-white p-8 shadow-[0_24px_54px_rgba(15,23,42,0.12)]">
+                      <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#052538_0%,#2ddd63_55%,#d3ff57_100%)]" />
+                      <p className="text-center text-[17px] leading-[1.9] text-[#30384a]">
+                        &ldquo;{featuredReview.review}&rdquo;
+                      </p>
+
+                      <div className="mt-6 flex items-center justify-center gap-3">
+                        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#0f172a] text-sm font-semibold text-white">
+                          {featuredReview.avatarText}
+                        </span>
+                        <p className="text-sm font-semibold text-[#1f2937]">
+                          {featuredReview.name}, {featuredReview.role}
+                        </p>
+                      </div>
+                    </article>
+
+                    <article className="w-[27%] rounded-3xl border border-[#e1e6f0] bg-white/70 p-6 opacity-60 shadow-[0_12px_28px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+                      <p className="text-sm leading-[1.9] text-[#6a7488]">
+                        {rightReview.review}
+                      </p>
+                      <div className="mt-5 flex items-center gap-3">
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fde6e6] text-xs font-bold text-[#be2b2b]">
+                          {rightReview.avatarText}
+                        </span>
+                        <p className="text-sm font-semibold text-[#4a5568]">
+                          {rightReview.name}
+                        </p>
+                      </div>
+                    </article>
                   </div>
-                </motion.article>
 
-                <motion.article
-                  initial="hidden"
-                  whileInView="show"
-                  viewport={{ once: true, amount: 0.25 }}
-                  variants={scaleIn}
-                  custom={0.14}
-                  whileHover={{ y: -10, scale: 1.015 }}
-                  className="relative w-[46%] overflow-hidden rounded-[28px] border border-[#d9deea] bg-white p-8 shadow-[0_24px_54px_rgba(15,23,42,0.12)]"
-                >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#052538_0%,#2ddd63_55%,#d3ff57_100%)]" />
-                  <p className="text-center text-[17px] leading-[1.9] text-[#30384a]">
-                    &ldquo;{featuredReview.review}&rdquo;
-                  </p>
-
-                  <div className="mt-6 flex items-center justify-center gap-3">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#0f172a] text-sm font-semibold text-white">
-                      {featuredReview.avatarText}
-                    </span>
-                    <p className="text-sm font-semibold text-[#1f2937]">
-                      {featuredReview.name}, {featuredReview.role}
+                  <article className="rounded-[28px] border border-[#d9deea] bg-white p-6 shadow-[0_24px_54px_rgba(15,23,42,0.1)] lg:hidden">
+                    <p className="text-center text-[16px] leading-[1.9] text-[#30384a]">
+                      &ldquo;{featuredReview.review}&rdquo;
                     </p>
-                  </div>
-                </motion.article>
-
-                <motion.article
-                  initial="hidden"
-                  whileInView="show"
-                  viewport={{ once: true, amount: 0.25 }}
-                  variants={scaleIn}
-                  custom={0.22}
-                  whileHover={{ y: -6, opacity: 1 }}
-                  className="w-[27%] rounded-3xl border border-[#e1e6f0] bg-white/70 p-6 opacity-60 shadow-[0_12px_28px_rgba(15,23,42,0.04)] backdrop-blur-sm"
-                >
-                  <p className="text-sm leading-[1.9] text-[#6a7488]">
-                    {rightReview.review}
-                  </p>
-                  <div className="mt-5 flex items-center gap-3">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fde6e6] text-xs font-bold text-[#be2b2b]">
-                      {rightReview.avatarText}
-                    </span>
-                    <p className="text-sm font-semibold text-[#4a5568]">
-                      {rightReview.name}
-                    </p>
-                  </div>
-                </motion.article>
-              </div>
-
-              <motion.article
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.25 }}
-                variants={scaleIn}
-                custom={0.1}
-                className="rounded-[28px] border border-[#d9deea] bg-white p-6 shadow-[0_24px_54px_rgba(15,23,42,0.1)] lg:hidden"
-              >
-                <p className="text-center text-[16px] leading-[1.9] text-[#30384a]">
-                  &ldquo;{featuredReview.review}&rdquo;
-                </p>
-                <div className="mt-5 flex items-center justify-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0f172a] text-sm font-semibold text-white">
-                    {featuredReview.avatarText}
-                  </span>
-                  <p className="text-sm font-semibold text-[#1f2937]">
-                    {featuredReview.name}, {featuredReview.role}
-                  </p>
-                </div>
-              </motion.article>
+                    <div className="mt-5 flex items-center justify-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0f172a] text-sm font-semibold text-white">
+                        {featuredReview.avatarText}
+                      </span>
+                      <p className="text-sm font-semibold text-[#1f2937]">
+                        {featuredReview.name}, {featuredReview.role}
+                      </p>
+                    </div>
+                  </article>
+                </motion.div>
+              </AnimatePresence>
 
               <div className="mt-5 flex items-center justify-center gap-2">
                 {CUSTOMER_REVIEWS_SEED.map((review, index) => (
-                  <motion.span
+                  <button
                     key={review.id}
-                    animate={{
-                      scale: index === featuredIndex ? 1.15 : 1,
-                      opacity: index === featuredIndex ? 1 : 0.6,
-                    }}
-                    className={`h-2 w-2 rounded-full ${
-                      index === featuredIndex ? "bg-[#052538]" : "bg-[#c6cede]"
-                    }`}
-                  />
+                    type="button"
+                    onClick={() => jumpTo(index)}
+                    className="inline-flex h-5 w-5 items-center justify-center"
+                    aria-label={`Go to review ${index + 1}`}
+                  >
+                    <motion.span
+                      animate={{
+                        scale: index === activeIndex ? 1.15 : 1,
+                        opacity: index === activeIndex ? 1 : 0.6,
+                      }}
+                      className={`h-2 w-2 rounded-full ${
+                        index === activeIndex ? "bg-[#052538]" : "bg-[#c6cede]"
+                      }`}
+                    />
+                  </button>
                 ))}
               </div>
             </div>
