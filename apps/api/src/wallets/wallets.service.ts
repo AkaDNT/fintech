@@ -1,7 +1,5 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Currency } from '@repo/db';
-import { AppException } from 'src/common/errors/app.exception';
-import { ERROR_CODES } from 'src/common/errors/error-codes';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WalletErrors } from './errors/wallet-error.factory';
 
@@ -49,5 +47,20 @@ export class WalletsService {
     }
 
     return wallet;
+  }
+
+  async getMyWalletCurrency(params: { userId: string; currency: Currency }) {
+    const { userId, currency } = params;
+    const wallet = await this.prisma.wallet.findUnique({
+      where: {
+        userId_currency: { userId, currency },
+      },
+      select: {
+        userId: true,
+      },
+    });
+    if (!wallet || wallet.userId != userId) {
+      throw WalletErrors.walletNotFound();
+    }
   }
 }

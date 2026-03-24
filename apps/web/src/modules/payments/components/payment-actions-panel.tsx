@@ -75,9 +75,27 @@ export function PaymentActionsPanel({
         </Button>
       </div>
 
-      <p className="text-xs text-[#5b667a]">
-        Lifecycle actions: <strong>/hold</strong>, <strong>/capture</strong>,
-        <strong> /cancel</strong>, <strong>/refund</strong>.
+      <p className="text-[#5b667a]">
+        <strong>CREATED:</strong> The transaction has been created (intent), and
+        you can place a hold to temporarily lock the payment amount.
+      </p>
+      <p className="text-[#5b667a]">
+        <strong>HELD:</strong> The amount has been temporarily held, and you can
+        either capture it to complete the payment or cancel it to release the
+        funds.
+      </p>
+      <p className="text-[#5b667a]">
+        <strong>CAPTURED:</strong> The payment has been successfully captured,
+        and you can only issue a refund if needed.
+      </p>
+      <p className="text-[#5b667a]">
+        <strong>CANCELED:</strong> The held transaction has been canceled, the
+        amount has been returned to the available balance, and no further action
+        can be taken.
+      </p>
+      <p className="text-[#5b667a]">
+        <strong>REFUNDED:</strong> The transaction has been successfully
+        refunded, and no further action can be taken.
       </p>
     </div>
   );

@@ -56,7 +56,6 @@ export default function PaymentsPage() {
             <h2 className="text-base font-bold text-white">
               Create Payment Intent
             </h2>
-            <p className="mt-1 text-xs text-white/65">POST /payments/intents</p>
           </div>
           <div className="px-5 py-5">
             <PaymentIntentForm />
@@ -66,9 +65,6 @@ export default function PaymentsPage() {
         <article className="overflow-hidden rounded-[20px] border border-[#d9deea] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
           <div className="bg-[#052538] px-5 py-4">
             <h2 className="text-base font-bold text-white">Payment Actions</h2>
-            <p className="mt-1 text-xs text-white/65">
-              hold, capture, cancel, refund
-            </p>
           </div>
           <div className="px-5 py-5">
             <PaymentActionsPanel />

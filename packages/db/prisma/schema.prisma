@@ -93,6 +93,25 @@ enum AuditActorType {
   SYSTEM
 }
 
+enum WebhookEndpointStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  DEAD
+}
+
+enum InboxMessageStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+}
+
 model User{
   id String @id @default(cuid())
   email String @unique
@@ -276,5 +295,65 @@ model AuditLog {
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
   @@index([action, createdAt])
+  @@index([traceId])
+}
+
+model WebhookEndpoint {
+  id          String                @id @default(cuid())
+  name        String
+  targetUrl   String
+  secret      String
+  eventTypes  String[]
+  status      WebhookEndpointStatus @default(ACTIVE)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  deliveries  WebhookDelivery[]
+
+  @@index([status, createdAt])
+}
+
+model WebhookDelivery {
+  id               String                @id @default(cuid())
+  endpointId       String
+  outboxEventId    String?
+  eventType        String
+  payload          Json
+  signature        String?
+  status           WebhookDeliveryStatus @default(PENDING)
+  attemptCount     Int                   @default(0)
+  nextAttemptAt    DateTime              @default(now())
+  lastHttpStatus   Int?
+  lastError        String?
+  responseBody     String?
+  traceId          String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  endpoint         WebhookEndpoint       @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+  @@index([endpointId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([outboxEventId])
+  @@index([traceId])
+}
+
+model InboxMessage {
+  id            String             @id @default(cuid())
+  source        String
+  externalId    String
+  eventType     String
+  payload       Json
+  status        InboxMessageStatus @default(RECEIVED)
+  processedAt   DateTime?
+  lastError     String?
+  traceId       String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([source, externalId])
+  @@index([status, createdAt])
+  @@index([eventType, createdAt])
   @@index([traceId])
 }

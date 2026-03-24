@@ -18,6 +18,7 @@ import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PaymentsJobsModule } from './payments-jobs/payments-jobs.module';
 import { AdminPaymentsModule } from './admin-payments/admin-payments.module';
+import { OutboxJobsModule } from './outbox-jobs/outbox-jobs.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AdminPaymentsModule } from './admin-payments/admin-payments.module';
     PaymentsModule,
     PaymentsJobsModule,
     AdminPaymentsModule,
+    OutboxJobsModule,
   ],
   controllers: [AppController],
   providers: [

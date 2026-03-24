@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.module';
 import { PaymentsModule } from './payments/payments.module';
+import { OutboxModule } from './outbox/outbox.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { PaymentsModule } from './payments/payments.module';
     PrismaModule,
     ReportsModule,
     PaymentsModule,
+    OutboxModule,
   ],
   providers: [],
 })
