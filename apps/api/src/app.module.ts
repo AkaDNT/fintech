@@ -19,6 +19,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { PaymentsJobsModule } from './payments-jobs/payments-jobs.module';
 import { AdminPaymentsModule } from './admin-payments/admin-payments.module';
 import { OutboxJobsModule } from './outbox-jobs/outbox-jobs.module';
+import { WebhookEndpointsModule } from './webhook-endpoints/webhook-endpoints.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { OutboxJobsModule } from './outbox-jobs/outbox-jobs.module';
     PaymentsJobsModule,
     AdminPaymentsModule,
     OutboxJobsModule,
+    WebhookEndpointsModule,
   ],
   controllers: [AppController],
   providers: [
