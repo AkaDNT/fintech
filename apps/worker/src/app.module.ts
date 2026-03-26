@@ -4,6 +4,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.module';
 import { PaymentsModule } from './payments/payments.module';
 import { OutboxModule } from './outbox/outbox.module';
+import { WebhookDeliveryModule } from './webhook-delivery/webhook-delivery.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { OutboxModule } from './outbox/outbox.module';
     ReportsModule,
     PaymentsModule,
     OutboxModule,
+    WebhookDeliveryModule,
   ],
   providers: [],
 })
