@@ -21,9 +21,10 @@ export class TransfersService {
     amountStr: string;
   }) {
     const { idemKey, userId, toUserId, currency, amountStr } = params;
+    const requestHash = `${userId}:${toUserId}:${currency}:${amountStr}`;
 
     // 1) Idempotency: If replayed, return the cached response without re-executing business logic
-    const started = await this.idem.start(idemKey, 'TRANSFER');
+    const started = await this.idem.start(idemKey, 'TRANSFER', requestHash);
     if (started.replay) return started.response;
 
     // 2) Validate amount (numeric string -> bigint > 0)
@@ -83,7 +84,20 @@ export class TransfersService {
           );
         }
 
-        if (from.availableBalance < amount) {
+        // 4) Update balances atomically to avoid lost updates under concurrency.
+        const debited = await tx.wallet.updateMany({
+          where: {
+            id: from.id,
+            status: WalletStatus.ACTIVE,
+            currency,
+            availableBalance: { gte: amount },
+          },
+          data: {
+            availableBalance: { decrement: amount },
+          },
+        });
+
+        if (debited.count !== 1) {
           throw new AppException(
             {
               code: ERROR_CODES.INSUFFICIENT_FUNDS,
@@ -93,16 +107,26 @@ export class TransfersService {
           );
         }
 
-        // 4) Update balances
-        await tx.wallet.update({
-          where: { id: from.id },
-          data: { availableBalance: from.availableBalance - amount },
+        const credited = await tx.wallet.updateMany({
+          where: {
+            id: to.id,
+            status: WalletStatus.ACTIVE,
+            currency,
+          },
+          data: {
+            availableBalance: { increment: amount },
+          },
         });
 
-        await tx.wallet.update({
-          where: { id: to.id },
-          data: { availableBalance: to.availableBalance + amount },
-        });
+        if (credited.count !== 1) {
+          throw new AppException(
+            {
+              code: ERROR_CODES.WALLET_DISABLED,
+              message: 'Wallet is disabled',
+            },
+            HttpStatus.FORBIDDEN,
+          );
+        }
 
         // 5) Create ledger transaction + 2 entries (double-entry accounting)
         const ledgerTx = await tx.ledgerTransaction.create({

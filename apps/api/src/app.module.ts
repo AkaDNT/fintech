@@ -23,6 +23,8 @@ import { WebhookEndpointsModule } from './webhook-endpoints/webhook-endpoints.mo
 import { WebhookDeliveriesModule } from './webhook-deliveries/webhook-deliveries.module';
 import { InboxWebhooksModule } from './inbox-webhooks/inbox-webhooks.module';
 import { InboxJobsModule } from './inbox-jobs/inbox-jobs.module';
+import { ObservabilityModule } from './observability/observability.module';
+import { HttpMetricsInterceptor } from './common/interceptors/http-metrics.interceptor';
 
 @Module({
   imports: [
@@ -64,11 +66,13 @@ import { InboxJobsModule } from './inbox-jobs/inbox-jobs.module';
     WebhookDeliveriesModule,
     InboxWebhooksModule,
     InboxJobsModule,
+    ObservabilityModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
     { provide: APP_INTERCEPTOR, useClass: SuccessWrapInterceptor },
   ],
 })
