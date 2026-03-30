@@ -7,10 +7,36 @@ import { IdemStatus } from '@repo/db';
 @Injectable()
 export class IdempotencyService {
   constructor(private readonly prisma: PrismaService) {}
-  async start(key: string, scope: string) {
+  async start(key: string, scope: string, requestHash?: string) {
     const exist = await this.prisma.idempotencyKey.findUnique({
       where: { key },
     });
+
+    if (exist && exist.scope !== scope) {
+      throw new AppException(
+        {
+          code: ERROR_CODES.IDEMPOTENCY_CONFLICT,
+          message: 'Idempotency key already used with different scope',
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    if (
+      exist &&
+      exist.requestHash &&
+      requestHash &&
+      exist.requestHash !== requestHash
+    ) {
+      throw new AppException(
+        {
+          code: ERROR_CODES.IDEMPOTENCY_CONFLICT,
+          message: 'Idempotency key payload mismatch',
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
+
     if (exist?.status === 'SUCCEEDED') {
       return { replay: true as const, response: exist.response };
     }
@@ -28,6 +54,7 @@ export class IdempotencyService {
         data: {
           key,
           scope,
+          requestHash: requestHash ?? null,
           status: IdemStatus.IN_PROGRESS,
         },
       });

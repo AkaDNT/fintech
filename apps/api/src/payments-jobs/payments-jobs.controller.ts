@@ -1,8 +1,10 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post, Req, UseGuards } from '@nestjs/common';
+
 import { JwtAccessGuard } from 'src/auth/jwt-access.guard';
 import { RolesGuard } from 'src/common/roles.guard';
 import { Roles } from 'src/common/roles.decorator';
 import { PaymentsJobsService } from './payments-jobs.service';
+import * as traceMiddleware from 'src/common/trace/trace.middleware';
 
 @Controller('admin/payments')
 @UseGuards(JwtAccessGuard, RolesGuard)
@@ -11,7 +13,7 @@ export class PaymentsJobsController {
   constructor(private readonly jobs: PaymentsJobsService) {}
 
   @Post('expire-holds/run')
-  runExpireHolds() {
-    return this.jobs.enqueueExpireHolds();
+  runExpireHolds(@Req() req: traceMiddleware.RequestWithTraceId) {
+    return this.jobs.enqueueExpireHolds(req.traceId ?? 'unknown');
   }
 }
