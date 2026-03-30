@@ -5,6 +5,7 @@ import { ReportsModule } from './reports/reports.module';
 import { PaymentsModule } from './payments/payments.module';
 import { OutboxModule } from './outbox/outbox.module';
 import { WebhookDeliveryModule } from './webhook-delivery/webhook-delivery.module';
+import { InboxModule } from './inbox/inbox.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { WebhookDeliveryModule } from './webhook-delivery/webhook-delivery.modul
     PaymentsModule,
     OutboxModule,
     WebhookDeliveryModule,
+    InboxModule,
   ],
   providers: [],
 })

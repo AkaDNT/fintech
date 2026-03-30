@@ -7,6 +7,7 @@ import { HttpStatus, ValidationError, ValidationPipe } from '@nestjs/common';
 import { AppException } from './common/errors/app.exception';
 import { ERROR_CODES } from './common/errors/error-codes';
 import { Logger } from 'nestjs-pino';
+import * as express from 'express';
 
 async function bootstrap() {
   function formatValidation(errors: ValidationError[]) {
@@ -17,7 +18,10 @@ async function bootstrap() {
     }));
   }
   // Buffer logs true to avoid log init loss
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   app.useLogger(app.get(Logger));
   const config = app.get(ConfigService);
   const port = config.get<string>('PORT') ?? 3999;

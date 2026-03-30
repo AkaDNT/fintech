@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { AppException } from 'src/common/errors/app.exception';
+import { ERROR_CODES } from 'src/common/errors/error-codes';
+import {
+  PaymentProvider,
+  SupportedPaymentProvider,
+} from './providers/payment-provider.port';
 import { PaymentDirection, PaymentStatus, TxKind, TxStatus } from '@repo/db';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { parseAmount } from 'src/common/money/amount';
@@ -19,7 +25,27 @@ import {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject('PAYMENT_PROVIDERS')
+    private readonly providers: PaymentProvider[],
+  ) {}
+
+  private getProviderOrThrow(name: string): PaymentProvider {
+    const provider = this.providers.find((x) => x.name === name);
+
+    if (!provider) {
+      throw new AppException(
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Unsupported payment provider: ${name}`,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return provider;
+  }
 
   async createIntent(params: {
     userId: string;
@@ -89,6 +115,60 @@ export class PaymentsService {
       externalRef: payment.externalRef,
       description: payment.description,
       createdAt: payment.createdAt.toISOString(),
+    };
+  }
+
+  async createProviderIntent(params: {
+    userId: string;
+    walletId: string;
+    amountStr: string;
+    currency: 'VND' | 'USD';
+    provider: SupportedPaymentProvider;
+    merchantRef?: string;
+    description?: string;
+  }) {
+    // 1) tạo payment nội bộ trước
+    const payment = await this.createIntent({
+      userId: params.userId,
+      walletId: params.walletId,
+      amountStr: params.amountStr,
+      currency: params.currency,
+      merchantRef: params.merchantRef,
+      description: params.description,
+    });
+
+    // 2) gọi provider outbound
+    const provider = this.getProviderOrThrow(params.provider);
+
+    const created = await provider.createPayment({
+      paymentId: payment.paymentId,
+      merchantRef: payment.merchantRef,
+      amount: payment.amount,
+      currency: payment.currency,
+      description: payment.description,
+    });
+
+    // 3) update correlation keys về payment
+    await this.prisma.payment.update({
+      where: { id: payment.paymentId },
+      data: {
+        merchantRef: created.merchantRef ?? payment.merchantRef ?? null,
+        externalRef: created.externalRef ?? null,
+      },
+    });
+
+    return {
+      ...payment,
+      merchantRef: created.merchantRef ?? payment.merchantRef ?? null,
+      externalRef: created.externalRef ?? null,
+      provider: params.provider,
+      providerData: {
+        checkoutUrl: created.checkoutUrl ?? null,
+        clientSecret: created.clientSecret ?? null,
+        payUrl: created.payUrl ?? null,
+        deeplink: created.deeplink ?? null,
+        qrCodeUrl: created.qrCodeUrl ?? null,
+      },
     };
   }
 
@@ -187,6 +267,7 @@ export class PaymentsService {
         walletId: payment.walletId,
         amount: payment.amount,
         currency: payment.currency,
+        traceId: getTraceId(),
         status: 'HELD',
       });
 
@@ -299,11 +380,11 @@ export class PaymentsService {
       });
 
       if (!systemWallet) {
-        throw WalletErrors.systemWalletDisabled;
+        throw WalletErrors.systemWalletDisabled();
       }
 
       if (systemWallet.status !== 'ACTIVE') {
-        throw WalletErrors.systemWalletDisabled;
+        throw WalletErrors.systemWalletDisabled();
       }
 
       const updatedUserWallet = await tx.wallet.update({
@@ -387,6 +468,7 @@ export class PaymentsService {
         amount: payment.amount,
         currency: payment.currency,
         status: 'CAPTURED',
+        traceId: getTraceId(),
         extra: {
           ledgerTxId: ledgerTx.id,
         },
@@ -478,6 +560,7 @@ export class PaymentsService {
         walletId: payment.walletId,
         amount: payment.amount,
         currency: payment.currency,
+        traceId: getTraceId(),
         status: 'CANCELED',
       });
 
@@ -610,6 +693,7 @@ export class PaymentsService {
         amount: payment.amount,
         currency: payment.currency,
         status: 'REFUNDED',
+        traceId: getTraceId(),
         extra: {
           refundTxId: ledgerTx.id,
         },

@@ -21,6 +21,8 @@ import { AdminPaymentsModule } from './admin-payments/admin-payments.module';
 import { OutboxJobsModule } from './outbox-jobs/outbox-jobs.module';
 import { WebhookEndpointsModule } from './webhook-endpoints/webhook-endpoints.module';
 import { WebhookDeliveriesModule } from './webhook-deliveries/webhook-deliveries.module';
+import { InboxWebhooksModule } from './inbox-webhooks/inbox-webhooks.module';
+import { InboxJobsModule } from './inbox-jobs/inbox-jobs.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { WebhookDeliveriesModule } from './webhook-deliveries/webhook-deliveries
     OutboxJobsModule,
     WebhookEndpointsModule,
     WebhookDeliveriesModule,
+    InboxWebhooksModule,
+    InboxJobsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -108,6 +108,7 @@ enum WebhookDeliveryStatus {
 
 enum InboxMessageStatus {
   RECEIVED
+  PROCESSING
   PROCESSED
   FAILED
 }

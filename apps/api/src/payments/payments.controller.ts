@@ -12,6 +12,7 @@ import { JwtAccessGuard } from 'src/auth/jwt-access.guard';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
 import { PaymentsService } from './payments.service';
 import { PaymentQueryDto } from './dto/payment-query.dto';
+import * as paymentProviderPort from './providers/payment-provider.port';
 
 @Controller('payments')
 @UseGuards(JwtAccessGuard)
@@ -27,6 +28,23 @@ export class PaymentsController {
       currency: dto.currency,
       merchantRef: dto.merchantRef,
       externalRef: dto.externalRef,
+      description: dto.description,
+    });
+  }
+
+  @Post('intents/:provider')
+  async createProviderIntent(
+    @Req() req: any,
+    @Param('provider') provider: paymentProviderPort.SupportedPaymentProvider,
+    @Body() dto: CreatePaymentIntentDto,
+  ) {
+    return this.paymentsService.createProviderIntent({
+      userId: req.user.sub,
+      walletId: dto.walletId,
+      amountStr: dto.amount,
+      currency: dto.currency,
+      provider,
+      merchantRef: dto.merchantRef,
       description: dto.description,
     });
   }
