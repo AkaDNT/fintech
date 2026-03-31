@@ -23,18 +23,35 @@ export class ExpirePaymentHoldsHandler {
         status: 'ACTIVE',
         expiresAt: { lt: now },
       },
-      include: {
-        payment: {
-          include: { wallet: true },
-        },
-      },
+      select: { id: true },
       take: 100,
     });
 
     let processed = 0;
 
-    for (const hold of expiredHolds) {
+    for (const { id } of expiredHolds) {
       const updated = await this.prisma.$transaction(async (tx) => {
+        const hold = await tx.holdRecord.findUnique({
+          where: { id },
+          include: {
+            payment: {
+              include: { wallet: true },
+            },
+          },
+        });
+
+        if (!hold) {
+          return false;
+        }
+
+        if (hold.status !== 'ACTIVE') {
+          return false;
+        }
+
+        if (!hold.expiresAt || hold.expiresAt >= now) {
+          return false;
+        }
+
         const payment = hold.payment;
         const wallet = payment.wallet;
 
@@ -42,23 +59,44 @@ export class ExpirePaymentHoldsHandler {
           return false;
         }
 
-        await tx.wallet.update({
-          where: { id: wallet.id },
+        const walletUpdated = await tx.wallet.updateMany({
+          where: {
+            id: wallet.id,
+            lockedBalance: { gte: hold.amount },
+          },
           data: {
-            availableBalance: wallet.availableBalance + hold.amount,
-            lockedBalance: wallet.lockedBalance - hold.amount,
+            availableBalance: { increment: hold.amount },
+            lockedBalance: { decrement: hold.amount },
           },
         });
 
-        await tx.holdRecord.update({
-          where: { id: hold.id },
+        if (walletUpdated.count !== 1) {
+          return false;
+        }
+
+        const holdUpdated = await tx.holdRecord.updateMany({
+          where: {
+            id: hold.id,
+            status: 'ACTIVE',
+          },
           data: { status: 'EXPIRED' },
         });
 
-        await tx.payment.update({
-          where: { id: payment.id },
+        if (holdUpdated.count !== 1) {
+          return false;
+        }
+
+        const paymentUpdated = await tx.payment.updateMany({
+          where: {
+            id: payment.id,
+            status: 'HELD',
+          },
           data: { status: 'CANCELED' },
         });
+
+        if (paymentUpdated.count !== 1) {
+          return false;
+        }
 
         await createAuditLog(tx, {
           actorType: AUDIT_ACTOR_TYPES.SYSTEM,
