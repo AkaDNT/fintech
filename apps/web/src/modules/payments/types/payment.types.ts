@@ -1,4 +1,5 @@
 export type PaymentCurrency = "VND" | "USD";
+export type PaymentProvider = "stripe" | "paypal" | "wise" | "flutterwave";
 
 export interface CreatePaymentIntentRequest {
   walletId: string;
