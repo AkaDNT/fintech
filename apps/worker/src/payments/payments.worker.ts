@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
+import { getTraceId, runWithTraceId } from '@repo/shared';
 
 @Injectable()
 export class PaymentsWorker implements OnModuleInit, OnModuleDestroy {
@@ -29,20 +30,45 @@ export class PaymentsWorker implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker(
       'payments',
       async (job) => {
-        const handler = this.handlers.find((h) => h.name === job.name);
+        const traceId = job.data?.traceId ?? 'unknown';
 
-        if (!handler) {
-          this.logger.warn(
+        return runWithTraceId(traceId, async () => {
+          this.logger.log(
             JSON.stringify({
-              msg: 'payments_job_handler_missing',
+              msg: 'payments_job_started',
+              traceId: getTraceId(),
               jobName: job.name,
               jobId: String(job.id),
             }),
           );
-          return { ok: false, reason: `No handler for job ${job.name}` };
-        }
 
-        return handler.handle(job);
+          const handler = this.handlers.find((h) => h.name === job.name);
+
+          if (!handler) {
+            this.logger.warn(
+              JSON.stringify({
+                msg: 'payments_job_handler_missing',
+                traceId: getTraceId(),
+                jobName: job.name,
+                jobId: String(job.id),
+              }),
+            );
+            return { ok: false, reason: `No handler for job ${job.name}` };
+          }
+
+          const result = await handler.handle(job);
+
+          this.logger.log(
+            JSON.stringify({
+              msg: 'payments_job_completed',
+              traceId: getTraceId(),
+              jobName: job.name,
+              jobId: String(job.id),
+            }),
+          );
+
+          return result;
+        });
       },
       { connection: redis },
     );
