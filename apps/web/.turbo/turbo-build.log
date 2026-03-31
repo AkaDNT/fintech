@@ -6,25 +6,29 @@
 - Environments: .env.local
 
   Creating an optimized production build ...
-✓ Compiled successfully in 6.1s
+✓ Compiled successfully in 5.7s
   Running TypeScript ...
   Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/13) ...
-  Generating static pages using 7 workers (3/13) 
-  Generating static pages using 7 workers (6/13) 
-  Generating static pages using 7 workers (9/13) 
-✓ Generating static pages using 7 workers (13/13) in 945.9ms
+  Generating static pages using 7 workers (0/17) ...
+  Generating static pages using 7 workers (4/17) 
+  Generating static pages using 7 workers (8/17) 
+  Generating static pages using 7 workers (12/17) 
+✓ Generating static pages using 7 workers (17/17) in 1140.7ms
   Finalizing page optimization ...
 
 Route (app)
 ┌ ○ /
 ├ ○ /_not-found
 ├ ƒ /admin/ledger/[txId]
+├ ○ /admin/observability
+├ ○ /admin/outbox
 ├ ○ /admin/payments
 ├ ƒ /admin/payments/[paymentId]
 ├ ○ /admin/reports
 ├ ○ /admin/users
 ├ ƒ /admin/wallets/[walletId]
+├ ○ /admin/webhook-deliveries
+├ ○ /admin/webhooks
 ├ ○ /dashboard
 ├ ○ /icon.svg
 ├ ○ /login
