@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getTraceId } from '@repo/shared';
+import { PassThrough } from 'node:stream';
+import { once } from 'node:events';
+import { S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import { DomainError, ERROR_CODES, getTraceId } from '@repo/shared';
 import { JobHandler } from '../ports/job-handler.port';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -20,24 +23,90 @@ export class UsersCsvHandler implements JobHandler {
     return value;
   }
 
-  private getS3Client(): S3Client {
-    const endpoint = process.env.MINIO_ENDPOINT;
-    const accessKeyId = process.env.MINIO_ACCESS_KEY;
-    const secretAccessKey = process.env.MINIO_SECRET_KEY;
+  private getStorageTarget(): {
+    provider: 'aws-s3' | 'minio';
+    bucket: string;
+    client: S3Client;
+  } {
+    const awsBucket = process.env.S3_BUCKET?.trim();
+    const awsRegion = process.env.AWS_REGION?.trim();
+    const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
+    const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
+    const hasAnyAwsConfig =
+      !!awsBucket ||
+      !!awsRegion ||
+      !!awsAccessKeyId ||
+      !!awsSecretAccessKey;
 
-    if (!endpoint || !accessKeyId || !secretAccessKey) {
-      throw new Error('MinIO/S3 configuration is missing');
+    if (hasAnyAwsConfig) {
+      if (!awsBucket || !awsRegion) {
+        throw new DomainError(
+          ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
+          'Incomplete AWS S3 configuration: S3_BUCKET and AWS_REGION are required',
+          { awsBucket: !!awsBucket, awsRegion: !!awsRegion },
+        );
+      }
+
+      const s3Config: ConstructorParameters<typeof S3Client>[0] = {
+        region: awsRegion,
+      };
+
+      if (awsAccessKeyId || awsSecretAccessKey) {
+        if (!awsAccessKeyId || !awsSecretAccessKey) {
+          throw new DomainError(
+            ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
+            'Incomplete AWS credentials: both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required',
+            {
+              awsAccessKeyId: !!awsAccessKeyId,
+              awsSecretAccessKey: !!awsSecretAccessKey,
+            },
+          );
+        }
+
+        s3Config.credentials = {
+          accessKeyId: awsAccessKeyId,
+          secretAccessKey: awsSecretAccessKey,
+        };
+      }
+
+      return {
+        provider: 'aws-s3',
+        bucket: awsBucket,
+        client: new S3Client(s3Config),
+      };
     }
 
-    return new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
-      endpoint,
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-    });
+    const minioBucket = process.env.MINIO_BUCKET?.trim();
+    const endpoint = process.env.MINIO_ENDPOINT?.trim();
+    const accessKeyId = process.env.MINIO_ACCESS_KEY?.trim();
+    const secretAccessKey = process.env.MINIO_SECRET_KEY?.trim();
+
+    if (!minioBucket || !endpoint || !accessKeyId || !secretAccessKey) {
+      throw new DomainError(
+        ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
+        'MinIO configuration is missing: MINIO_BUCKET, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY are required',
+        {
+          minioBucket: !!minioBucket,
+          endpoint: !!endpoint,
+          accessKeyId: !!accessKeyId,
+          secretAccessKey: !!secretAccessKey,
+        },
+      );
+    }
+
+    return {
+      provider: 'minio',
+      bucket: minioBucket,
+      client: new S3Client({
+        region: process.env.MINIO_REGION || 'us-east-1',
+        endpoint,
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId,
+          secretAccessKey,
+        },
+      }),
+    };
   }
 
   private buildDateFilter(
@@ -47,12 +116,20 @@ export class UsersCsvHandler implements JobHandler {
   ) {
     const parseYmd = (value: string, fieldName: string) => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        throw new Error(`Invalid ${fieldName} filter: ${value}`);
+        throw new DomainError(
+          ERROR_CODES.REPORTS_INVALID_FILTER,
+          `Invalid ${fieldName} filter: ${value}`,
+          { fieldName, value },
+        );
       }
 
       const parsed = new Date(`${value}T00:00:00.000Z`);
       if (Number.isNaN(parsed.getTime())) {
-        throw new Error(`Invalid ${fieldName} filter: ${value}`);
+        throw new DomainError(
+          ERROR_CODES.REPORTS_INVALID_FILTER,
+          `Invalid ${fieldName} filter: ${value}`,
+          { fieldName, value },
+        );
       }
 
       return parsed;
@@ -63,7 +140,15 @@ export class UsersCsvHandler implements JobHandler {
     const legacyDateRaw = typeof dateRaw === 'string' ? dateRaw.trim() : '';
 
     if ((from || to) && legacyDateRaw) {
-      throw new Error('Use either date or from/to filters, not both');
+      throw new DomainError(
+        ERROR_CODES.REPORTS_INVALID_FILTER,
+        'Use either date or from/to filters, not both',
+        {
+          date: legacyDateRaw,
+          from,
+          to,
+        },
+      );
     }
 
     if (!from && !to && !legacyDateRaw) {
@@ -100,95 +185,132 @@ export class UsersCsvHandler implements JobHandler {
     }
 
     if (createdAt.gte && createdAt.lt && createdAt.gte >= createdAt.lt) {
-      throw new Error('Invalid range: from must be <= to');
+      throw new DomainError(
+        ERROR_CODES.REPORTS_INVALID_FILTER,
+        'Invalid range: from must be <= to',
+        {
+          from,
+          to,
+        },
+      );
     }
 
     return { createdAt };
   }
 
   async handle(job: Job) {
-    const bucket = process.env.MINIO_BUCKET;
-    if (!bucket) {
-      throw new Error('MINIO_BUCKET is missing');
-    }
+    const startedAt = Date.now();
+    const storage = this.getStorageTarget();
+    const bucket = storage.bucket;
 
     const dateRaw = typeof job.data?.date === 'string' ? job.data.date : null;
     const fromRaw = typeof job.data?.from === 'string' ? job.data.from : null;
     const toRaw = typeof job.data?.to === 'string' ? job.data.to : null;
     const where = this.buildDateFilter(dateRaw, fromRaw, toRaw);
 
-    const rows: string[] = ['id,email,status,role,createdAt,updatedAt'];
+    const objectKey = `reports/users/users-${Date.now()}-${String(job.id)}.csv`;
+    const uploadStream = new PassThrough();
+    const upload = new Upload({
+      client: storage.client,
+      params: {
+        Bucket: bucket,
+        Key: objectKey,
+        Body: uploadStream,
+        ContentType: 'text/csv; charset=utf-8',
+      },
+      queueSize: 4,
+      partSize: 5 * 1024 * 1024,
+      leavePartsOnError: false,
+    });
+    const uploadPromise = upload.done();
+
+    let sizeBytes = 0;
+    const writeCsvChunk = async (chunk: string) => {
+      const buffer = Buffer.from(chunk, 'utf8');
+      sizeBytes += buffer.byteLength;
+
+      if (!uploadStream.write(buffer)) {
+        await once(uploadStream, 'drain');
+      }
+    };
 
     const pageSize = 1000;
     let cursorId: string | undefined;
     let usersExported = 0;
 
-    while (true) {
-      const users = await this.prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          email: true,
-          status: true,
-          role: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: {
-          id: 'asc',
-        },
-        take: pageSize,
-        ...(cursorId
-          ? {
-              cursor: { id: cursorId },
-              skip: 1,
-            }
-          : {}),
-      });
+    try {
+      await writeCsvChunk('id,email,status,role,createdAt,updatedAt\n');
 
-      if (users.length === 0) {
-        break;
-      }
+      while (true) {
+        const users = await this.prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            email: true,
+            status: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: {
+            id: 'asc',
+          },
+          take: pageSize,
+          ...(cursorId
+            ? {
+                cursor: { id: cursorId },
+                skip: 1,
+              }
+            : {}),
+        });
 
-      for (const user of users) {
-        rows.push(
-          [
+        if (users.length === 0) {
+          break;
+        }
+
+        for (const user of users) {
+          const row = [
             this.escapeCsv(user.id),
             this.escapeCsv(user.email),
             this.escapeCsv(user.status),
             this.escapeCsv(user.role),
             this.escapeCsv(user.createdAt.toISOString()),
             this.escapeCsv(user.updatedAt.toISOString()),
-          ].join(','),
-        );
+          ].join(',');
+
+          await writeCsvChunk(`${row}\n`);
+        }
+
+        usersExported += users.length;
+        cursorId = users[users.length - 1]!.id;
       }
 
-      usersExported += users.length;
-      cursorId = users[users.length - 1]!.id;
+      uploadStream.end();
+      await uploadPromise;
+    } catch (error) {
+      uploadStream.destroy(
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      await uploadPromise.catch(() => undefined);
+      throw error;
+    } finally {
+      storage.client.destroy();
     }
-
-    const csvContent = `${rows.join('\n')}\n`;
-    const csvBuffer = Buffer.from(csvContent, 'utf8');
-    const objectKey = `reports/users/users-${Date.now()}-${String(job.id)}.csv`;
-
-    const s3 = this.getS3Client();
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: bucket,
-        Key: objectKey,
-        Body: csvBuffer,
-        ContentType: 'text/csv; charset=utf-8',
-      }),
-    );
 
     await this.prisma.fileObject.create({
       data: {
         bucket,
         objectKey,
         mimeType: 'text/csv',
-        size: csvBuffer.byteLength,
+        size: sizeBytes,
       },
     });
+
+    const elapsedMs = Math.max(1, Date.now() - startedAt);
+    const rowsPerSecond = Number(
+      (usersExported / (elapsedMs / 1000)).toFixed(2),
+    );
+    const bytesPerSecond = Number((sizeBytes / (elapsedMs / 1000)).toFixed(2));
 
     this.logger.log(
       JSON.stringify({
@@ -196,20 +318,28 @@ export class UsersCsvHandler implements JobHandler {
         traceId: getTraceId(),
         jobId: String(job.id),
         bucket,
+        storageProvider: storage.provider,
         objectKey,
         usersExported,
-        sizeBytes: csvBuffer.byteLength,
+        sizeBytes,
+        elapsedMs,
+        rowsPerSecond,
+        bytesPerSecond,
       }),
     );
 
     return {
       ok: true,
       jobId: String(job.id),
+      storageProvider: storage.provider,
       bucket,
       objectKey,
       mimeType: 'text/csv',
-      sizeBytes: csvBuffer.byteLength,
+      sizeBytes,
       usersExported,
+      elapsedMs,
+      rowsPerSecond,
+      bytesPerSecond,
       filter: {
         date: dateRaw,
         from: fromRaw,
