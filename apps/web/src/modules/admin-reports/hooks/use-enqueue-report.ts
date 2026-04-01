@@ -12,10 +12,16 @@ export function useEnqueueReport() {
     mutationFn: async (params: {
       kind: "USERS" | "RECONCILE";
       date?: string;
+      from?: string;
+      to?: string;
       currency?: "VND" | "USD";
     }) => {
       if (params.kind === "USERS") {
-        return enqueueUsersCsv(params.date);
+        return enqueueUsersCsv({
+          date: params.date,
+          from: params.from,
+          to: params.to,
+        });
       }
 
       return enqueueReconcile(params.currency);

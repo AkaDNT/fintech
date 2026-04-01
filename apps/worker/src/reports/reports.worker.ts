@@ -14,6 +14,7 @@ import { JobHandler } from './ports/job-handler.port';
 export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ReportsWorker.name);
   private worker!: Worker;
+  private redis?: IORedis;
 
   constructor(
     @Inject('REPORTS_JOB_HANDLERS')
@@ -21,7 +22,7 @@ export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    const redis = new IORedis(process.env.REDIS_URL!, {
+    this.redis = new IORedis(process.env.REDIS_URL!, {
       maxRetriesPerRequest: null,
     });
 
@@ -47,7 +48,9 @@ export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
           const handler = handlerMap.get(job.name);
 
           if (!handler) {
-            this.logger.warn(
+            const error = new Error(`No handler for job ${job.name}`);
+
+            this.logger.error(
               JSON.stringify({
                 msg: 'reports_job_handler_missing',
                 traceId: getTraceId(),
@@ -56,13 +59,24 @@ export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
               }),
             );
 
-            return {
-              ok: false,
-              reason: `No handler for job ${job.name}`,
-            };
+            throw error;
           }
 
-          const result = await handler.handle(job);
+          let result: unknown;
+          try {
+            result = await handler.handle(job);
+          } catch (error) {
+            this.logger.error(
+              JSON.stringify({
+                msg: 'reports_job_failed',
+                traceId: getTraceId(),
+                jobId: String(job.id),
+                jobName: job.name,
+                error: error instanceof Error ? error.message : String(error),
+              }),
+            );
+            throw error;
+          }
 
           this.logger.log(
             JSON.stringify({
@@ -77,7 +91,7 @@ export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
         });
       },
       {
-        connection: redis,
+        connection: this.redis,
       },
     );
   }
@@ -85,6 +99,11 @@ export class ReportsWorker implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     if (this.worker) {
       await this.worker.close();
+    }
+
+    if (this.redis) {
+      await this.redis.quit();
+      this.redis = undefined;
     }
   }
 }

@@ -12,41 +12,60 @@ interface ReportsActionsProps {
 
 export function ReportsActions({ onCreated }: ReportsActionsProps) {
   const enqueueMutation = useEnqueueReport();
-  const [date, setDate] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [currency, setCurrency] = useState<"VND" | "USD">("VND");
 
   return (
     <div className="space-y-4">
       <section className="card p-4">
-        <h3 className="text-lg font-bold">Export users CSV</h3>
+        <h3 className="text-lg font-bold">User CSV Export</h3>
         <p className="mt-1 text-sm text-muted">
-          Optional date filter in ISO format.
+          Optionally filter users by creation date range (YYYY-MM-DD).
         </p>
+        <p className="mt-1 text-xs text-muted">
+          Leave both fields empty to export the full user dataset.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs font-semibold text-muted">Start Date</span>
+            <Input
+              type="date"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
+              className="max-w-xs ml-2"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-semibold text-muted">End Date</span>
+            <Input
+              type="date"
+              value={to}
+              onChange={(event) => setTo(event.target.value)}
+              className="max-w-xs ml-2"
+            />
+          </label>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <Input
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            placeholder="2026-03-14"
-            className="max-w-xs"
-          />
           <Button
             onClick={async () => {
               const res = await enqueueMutation.mutateAsync({
                 kind: "USERS",
-                date: date || undefined,
+                from: from || undefined,
+                to: to || undefined,
               });
               onCreated(res.jobId);
             }}
           >
-            Enqueue CSV
+            Queue CSV Export
           </Button>
         </div>
       </section>
 
       <section className="card p-4">
-        <h3 className="text-lg font-bold">Reconcile wallets</h3>
+        <h3 className="text-lg font-bold">Wallet Reconciliation</h3>
         <p className="mt-1 text-sm text-muted">
-          Run consistency check per currency.
+          Run a balance consistency check by currency.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <Select
@@ -69,7 +88,7 @@ export function ReportsActions({ onCreated }: ReportsActionsProps) {
               onCreated(String(res.jobId));
             }}
           >
-            Enqueue reconcile
+            Queue Reconciliation Job
           </Button>
         </div>
       </section>

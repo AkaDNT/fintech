@@ -48,8 +48,13 @@ export const ENDPOINTS = {
       debit: (walletId: string) => `/admin/wallets/${walletId}/debit`,
     },
     reports: {
-      users: (date?: string) =>
-        `/admin/reports/users${date ? `?date=${encodeURIComponent(date)}` : ""}`,
+      users: (params?: { date?: string; from?: string; to?: string }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.date) searchParams.set("date", params.date);
+        if (params?.from) searchParams.set("from", params.from);
+        if (params?.to) searchParams.set("to", params.to);
+        return `/admin/reports/users${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+      },
       reconcile: (currency?: string) =>
         `/admin/reports/reconcile${currency ? `?currency=${encodeURIComponent(currency)}` : ""}`,
       status: (id: string) => `/admin/reports/jobs/${id}`,

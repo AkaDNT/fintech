@@ -12,6 +12,7 @@ import { RolesGuard } from 'src/common/roles.guard';
 import { Roles } from 'src/common/roles.decorator';
 import { ReportsService } from './reports.service';
 import { ReconcileQueryDto } from './dto/reconcile-query.dto';
+import { UsersCsvQueryDto } from './dto/users-csv-query.dto';
 
 @Controller('admin/reports')
 @UseGuards(JwtAccessGuard, RolesGuard)
@@ -20,8 +21,8 @@ export class ReportsController {
   constructor(private readonly reports: ReportsService) {}
 
   @Post('users')
-  exportUsers(@Req() req: any, @Query('date') date?: string) {
-    return this.reports.enqueueUsersCsv(req.traceId, date);
+  exportUsers(@Req() req: any, @Query() q: UsersCsvQueryDto) {
+    return this.reports.enqueueUsersCsv(req.traceId, q);
   }
 
   @Post('reconcile')

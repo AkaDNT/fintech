@@ -4,14 +4,20 @@ import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
 import { Queue } from 'bullmq';
 import { Currency } from '@repo/db';
+import { UsersCsvQueryDto } from './dto/users-csv-query.dto';
 
 @Injectable()
 export class ReportsService {
   constructor(@Inject(REPORTS_QUEUE) private readonly reportsQueue: Queue) {}
-  async enqueueUsersCsv(traceId: string, date?: string | null) {
+  async enqueueUsersCsv(traceId: string, filter?: UsersCsvQueryDto) {
     const job = await this.reportsQueue.add(
       'USERS_CSV',
-      { date: date || null, traceId },
+      {
+        traceId,
+        date: filter?.date || null,
+        from: filter?.from || null,
+        to: filter?.to || null,
+      },
       {
         attempts: 5,
         backoff: { type: 'exponential', delay: 2000 },
