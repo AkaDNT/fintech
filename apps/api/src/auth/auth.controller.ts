@@ -30,7 +30,7 @@ export class AuthController {
   ) {}
   private setRefreshCookie(res: Response, token: string) {
     const days = Number(process.env.JWT_REFRESH_TTL_DAYS || 7);
-    const secure = Boolean(process.env.COOKIE_SECURE ?? false);
+    const secure = (process.env.COOKIE_SECURE ?? 'false') === 'true';
     const sameSite = (process.env.COOKIE_SAMESITE ?? 'lax') as
       | 'lax'
       | 'strict'

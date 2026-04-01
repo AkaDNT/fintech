@@ -28,84 +28,60 @@ export class UsersCsvHandler implements JobHandler {
     bucket: string;
     client: S3Client;
   } {
-    const awsBucket = process.env.S3_BUCKET?.trim();
-    const awsRegion = process.env.AWS_REGION?.trim();
-    const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
-    const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
-    const hasAnyAwsConfig =
-      !!awsBucket ||
-      !!awsRegion ||
-      !!awsAccessKeyId ||
-      !!awsSecretAccessKey;
+    const bucket = process.env.S3_BUCKET?.trim();
+    const region = process.env.AWS_REGION?.trim() || 'ap-southeast-1';
+    const endpoint = process.env.S3_ENDPOINT?.trim();
+    const accessKeyId =
+      process.env.S3_ACCESS_KEY?.trim() ||
+      process.env.AWS_ACCESS_KEY_ID?.trim();
+    const secretAccessKey =
+      process.env.S3_SECRET_KEY?.trim() ||
+      process.env.AWS_SECRET_ACCESS_KEY?.trim();
 
-    if (hasAnyAwsConfig) {
-      if (!awsBucket || !awsRegion) {
+    if (!bucket) {
+      throw new DomainError(
+        ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
+        'Missing S3_BUCKET',
+        { bucket: false },
+      );
+    }
+
+    const s3Config: ConstructorParameters<typeof S3Client>[0] = {
+      region,
+    };
+
+    if (endpoint) {
+      s3Config.endpoint = endpoint;
+      s3Config.forcePathStyle =
+        (process.env.S3_FORCE_PATH_STYLE ?? 'true') === 'true';
+
+      if (!accessKeyId || !secretAccessKey) {
         throw new DomainError(
           ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
-          'Incomplete AWS S3 configuration: S3_BUCKET and AWS_REGION are required',
-          { awsBucket: !!awsBucket, awsRegion: !!awsRegion },
+          'Custom S3 endpoint requires S3_ACCESS_KEY and S3_SECRET_KEY',
+          {
+            accessKeyId: !!accessKeyId,
+            secretAccessKey: !!secretAccessKey,
+          },
         );
       }
 
-      const s3Config: ConstructorParameters<typeof S3Client>[0] = {
-        region: awsRegion,
+      s3Config.credentials = {
+        accessKeyId,
+        secretAccessKey,
       };
 
-      if (awsAccessKeyId || awsSecretAccessKey) {
-        if (!awsAccessKeyId || !awsSecretAccessKey) {
-          throw new DomainError(
-            ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
-            'Incomplete AWS credentials: both AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required',
-            {
-              awsAccessKeyId: !!awsAccessKeyId,
-              awsSecretAccessKey: !!awsSecretAccessKey,
-            },
-          );
-        }
-
-        s3Config.credentials = {
-          accessKeyId: awsAccessKeyId,
-          secretAccessKey: awsSecretAccessKey,
-        };
-      }
-
       return {
-        provider: 'aws-s3',
-        bucket: awsBucket,
+        provider: 'minio',
+        bucket,
         client: new S3Client(s3Config),
       };
     }
 
-    const minioBucket = process.env.MINIO_BUCKET?.trim();
-    const endpoint = process.env.MINIO_ENDPOINT?.trim();
-    const accessKeyId = process.env.MINIO_ACCESS_KEY?.trim();
-    const secretAccessKey = process.env.MINIO_SECRET_KEY?.trim();
-
-    if (!minioBucket || !endpoint || !accessKeyId || !secretAccessKey) {
-      throw new DomainError(
-        ERROR_CODES.REPORTS_STORAGE_CONFIG_INVALID,
-        'MinIO configuration is missing: MINIO_BUCKET, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY are required',
-        {
-          minioBucket: !!minioBucket,
-          endpoint: !!endpoint,
-          accessKeyId: !!accessKeyId,
-          secretAccessKey: !!secretAccessKey,
-        },
-      );
-    }
-
     return {
-      provider: 'minio',
-      bucket: minioBucket,
-      client: new S3Client({
-        region: process.env.MINIO_REGION || 'us-east-1',
-        endpoint,
-        forcePathStyle: true,
-        credentials: {
-          accessKeyId,
-          secretAccessKey,
-        },
-      }),
+      provider: 'aws-s3',
+      bucket,
+      client: new S3Client(s3Config),
     };
   }
 
