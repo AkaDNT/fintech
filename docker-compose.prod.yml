@@ -29,9 +29,7 @@ services:
       retries: 10
 
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: ${REGISTRY_IMAGE}/api:${IMAGE_TAG}
     container_name: fintech_api
     restart: unless-stopped
     env_file:
@@ -56,9 +54,7 @@ services:
       retries: 10
 
   worker:
-    build:
-      context: .
-      dockerfile: apps/worker/Dockerfile
+    image: ${REGISTRY_IMAGE}/worker:${IMAGE_TAG}
     container_name: fintech_worker
     restart: unless-stopped
     env_file:
@@ -70,11 +66,7 @@ services:
         condition: service_healthy
 
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    image: ${REGISTRY_IMAGE}/web:${IMAGE_TAG}
     container_name: fintech_web
     restart: unless-stopped
     env_file:
