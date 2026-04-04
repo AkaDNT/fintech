@@ -22,6 +22,9 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY --from=pruner /app/out/full/ .
 
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+
 RUN npm --workspace apps/web run build
 
 FROM node:20-bookworm-slim AS runner

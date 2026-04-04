@@ -19,6 +19,9 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY --from=pruner /app/out/full/ .
 
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN npm --workspace packages/db run prisma:generate \
  && npm --workspace packages/db run build \
  && npm --workspace packages/shared run build \

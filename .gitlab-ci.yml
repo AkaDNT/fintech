@@ -47,6 +47,7 @@ package_api:
         --local context=. \
         --local dockerfile=. \
         --opt filename=apps/api/Dockerfile \
+        --opt build-arg:DATABASE_URL=$DATABASE_URL \
         --output type=image,name=$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHORT_SHA,push=true
 
 package_worker:
@@ -58,6 +59,7 @@ package_worker:
         --local context=. \
         --local dockerfile=. \
         --opt filename=apps/worker/Dockerfile \
+        --opt build-arg:DATABASE_URL=$DATABASE_URL \
         --output type=image,name=$CI_REGISTRY_IMAGE/worker:$CI_COMMIT_SHORT_SHA,push=true
 
 package_web:
@@ -69,6 +71,7 @@ package_web:
         --local context=. \
         --local dockerfile=. \
         --opt filename=apps/web/Dockerfile \
+        --opt build-arg:NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
         --output type=image,name=$CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA,push=true
 
 deploy_production:
