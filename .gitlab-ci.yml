@@ -106,4 +106,4 @@ deploy_production:
     url: https://app.akadnt.shop
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
+      when: on_success
