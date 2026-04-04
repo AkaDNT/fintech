@@ -94,13 +94,21 @@ deploy_production:
     - |
       ssh "$DEPLOY_USER@$DEPLOY_HOST" "
         set -euo pipefail
+
+        echo '=== debug ==='
+        whoami
+        hostname
+        pwd
+        ls -la /opt/fintech
+        ls -la /opt/fintech/scripts
+        test -f /opt/fintech/scripts/deploy.sh
+        ls -l /opt/fintech/scripts/deploy.sh
+
         export REGISTRY='$CI_REGISTRY'
         export REGISTRY_USER='$CI_REGISTRY_USER'
         export REGISTRY_PASSWORD='$CI_REGISTRY_PASSWORD'
         export IMAGE_TAG='$CI_COMMIT_SHORT_SHA'
 
-        test -f /opt/fintech/scripts/deploy.sh
-        ls -l /opt/fintech/scripts/deploy.sh
         bash /opt/fintech/scripts/deploy.sh
       "
   environment:
