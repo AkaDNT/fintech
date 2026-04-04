@@ -98,8 +98,10 @@ deploy_production:
         export REGISTRY_USER='$CI_REGISTRY_USER'
         export REGISTRY_PASSWORD='$CI_REGISTRY_PASSWORD'
         export IMAGE_TAG='$CI_COMMIT_SHORT_SHA'
-        cd '$DEPLOY_PATH'
-        bash scripts/deploy.sh
+
+        test -f /opt/fintech/scripts/deploy.sh
+        ls -l /opt/fintech/scripts/deploy.sh
+        bash /opt/fintech/scripts/deploy.sh
       "
   environment:
     name: production
