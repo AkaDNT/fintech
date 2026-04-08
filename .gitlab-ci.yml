@@ -72,6 +72,8 @@ package_web:
         --local dockerfile=. \
         --opt filename=apps/web/Dockerfile \
         --opt build-arg:NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
+        --opt build-arg:NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY \
+        --opt build-arg:NEXT_DEPLOYMENT_ID=$CI_COMMIT_SHORT_SHA \
         --output type=image,name=$CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA,push=true
 
 deploy_production:
