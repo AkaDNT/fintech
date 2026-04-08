@@ -19,6 +19,7 @@ validate_build:
     - npm --workspace packages/shared run build
     - npm --workspace apps/api run build
     - npm --workspace apps/worker run build
+    - '[ -n "${NEXT_PUBLIC_API_BASE_URL:-}" ] || (echo "NEXT_PUBLIC_API_BASE_URL missing"; exit 1)'
     - npm --workspace apps/web run build
   rules:
     - if: "$CI_COMMIT_BRANCH"
@@ -53,6 +54,7 @@ package_api:
 package_worker:
   extends: .buildkit_template
   script:
+    - '[ -n "${NEXT_PUBLIC_API_BASE_URL:-}" ] || (echo "NEXT_PUBLIC_API_BASE_URL missing"; exit 1)'
     - |
       buildctl-daemonless.sh build \
         --frontend dockerfile.v0 \
