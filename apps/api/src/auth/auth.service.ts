@@ -52,8 +52,6 @@ export class AuthService {
       data: {
         email,
         passwordHash: await bcrypt.hash(password, 10),
-        // Grant admin role for user test
-        role: Role.ADMIN,
       },
     });
     const tokenRow = await this.prisma.refreshToken.create({
