@@ -25,6 +25,7 @@ COPY --from=pruner /app/out/full/ .
 ARG NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
+RUN node -e "const v = process.env.NEXT_PUBLIC_API_BASE_URL || ''; console.log('NEXT_PUBLIC_API_BASE_URL length in Docker build=' + v.length); if (!v) process.exit(1)"
 RUN npm --workspace apps/web run build
 
 FROM node:20-bookworm-slim AS runner
