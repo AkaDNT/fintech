@@ -54,7 +54,6 @@ package_api:
 package_worker:
   extends: .buildkit_template
   script:
-    - '[ -n "${NEXT_PUBLIC_API_BASE_URL:-}" ] || (echo "NEXT_PUBLIC_API_BASE_URL missing"; exit 1)'
     - |
       buildctl-daemonless.sh build \
         --frontend dockerfile.v0 \
@@ -67,6 +66,8 @@ package_worker:
 package_web:
   extends: .buildkit_template
   script:
+    - '[ -n "${NEXT_PUBLIC_API_BASE_URL:-}" ] || (echo "NEXT_PUBLIC_API_BASE_URL missing"; exit 1)'
+    - echo "NEXT_PUBLIC_API_BASE_URL length=${#NEXT_PUBLIC_API_BASE_URL}"
     - |
       buildctl-daemonless.sh build \
         --frontend dockerfile.v0 \
