@@ -91,36 +91,25 @@ deploy_production:
     - cp "$SSH_KNOWN_HOSTS" ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p /opt/fintech/scripts /opt/fintech/nginx"
-
-    - scp docker-compose.prod.yml "$DEPLOY_USER@$DEPLOY_HOST:/opt/fintech/docker-compose.prod.yml"
-    - scp deploy/scripts/deploy.sh "$DEPLOY_USER@$DEPLOY_HOST:/opt/fintech/scripts/deploy.sh"
-    - scp deploy/nginx/default.conf "$DEPLOY_USER@$DEPLOY_HOST:/opt/fintech/nginx/default.conf"
-
     - |
       ssh "$DEPLOY_USER@$DEPLOY_HOST" "
         set -euo pipefail
 
-        chmod +x /opt/fintech/scripts/deploy.sh
-
-        echo '=== verify copied files ==='
-        ls -l /opt/fintech/docker-compose.prod.yml
+        echo '=== debug ==='
+        whoami
+        hostname
+        pwd
+        ls -la /opt/fintech
+        ls -la /opt/fintech/scripts
+        test -f /opt/fintech/scripts/deploy.sh
         ls -l /opt/fintech/scripts/deploy.sh
-        ls -l /opt/fintech/nginx/default.conf
-
-        echo '=== grep compose ==='
-        grep -nE 'image:|build:' /opt/fintech/docker-compose.prod.yml || true
 
         export REGISTRY='$CI_REGISTRY'
         export REGISTRY_USER='$CI_REGISTRY_USER'
         export REGISTRY_PASSWORD='$CI_REGISTRY_PASSWORD'
-        export REGISTRY_IMAGE='$CI_REGISTRY_IMAGE'
         export IMAGE_TAG='$CI_COMMIT_SHORT_SHA'
 
         bash /opt/fintech/scripts/deploy.sh
-
-        echo '=== running containers ==='
-        docker ps --format 'table {{.Names}}\t{{.Image}}'
       "
   environment:
     name: production

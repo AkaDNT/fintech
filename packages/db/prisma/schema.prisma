@@ -118,7 +118,7 @@ model User{
   email String @unique
   passwordHash String
   status UserStatus @default(ACTIVE)
-  role Role @default(ADMIN)
+  role Role @default(USER)
   wallets Wallet[]
   payments Payment[]
   

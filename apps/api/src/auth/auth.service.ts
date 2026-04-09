@@ -5,7 +5,6 @@ import bcrypt from 'bcryptjs';
 import { AppException } from 'src/common/errors/app.exception';
 import { ERROR_CODES } from 'src/common/errors/error-codes';
 import { RegisterDto } from './dto/register.dto';
-import { Role } from '@repo/db';
 
 @Injectable()
 export class AuthService {

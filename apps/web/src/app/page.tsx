@@ -220,7 +220,13 @@ export default function HomePage() {
               </div>
 
               <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-2 text-sm text-white/70 lg:flex">
-                {["Home", "Pricing", "Blog", "Contact", "FAQs"].map((item) => (
+                {[
+                  "Personal Loan",
+                  "One Card",
+                  "Savings",
+                  "Checking",
+                  "Help",
+                ].map((item) => (
                   <a
                     key={item}
                     href="#"
