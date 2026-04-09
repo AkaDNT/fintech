@@ -49,6 +49,23 @@ export class PaymentsController {
     });
   }
 
+  @Post('topups/intents/:provider')
+  async createTopUpProviderIntent(
+    @Req() req: any,
+    @Param('provider') provider: paymentProviderPort.SupportedPaymentProvider,
+    @Body() dto: CreatePaymentIntentDto,
+  ) {
+    return this.paymentsService.createTopUpProviderIntent({
+      userId: req.user.sub,
+      walletId: dto.walletId,
+      amountStr: dto.amount,
+      currency: dto.currency,
+      provider,
+      merchantRef: dto.merchantRef,
+      description: dto.description,
+    });
+  }
+
   @Post(':paymentId/hold')
   async holdPayment(@Req() req: any, @Param('paymentId') paymentId: string) {
     return this.paymentsService.holdPayment({
@@ -60,6 +77,14 @@ export class PaymentsController {
   @Post(':paymentId/capture')
   async capturePayment(@Req() req: any, @Param('paymentId') paymentId: string) {
     return this.paymentsService.capturePayment({
+      userId: req.user.sub,
+      paymentId,
+    });
+  }
+
+  @Post(':paymentId/topup/settle')
+  async settleTopUp(@Req() req: any, @Param('paymentId') paymentId: string) {
+    return this.paymentsService.settleTopUp({
       userId: req.user.sub,
       paymentId,
     });

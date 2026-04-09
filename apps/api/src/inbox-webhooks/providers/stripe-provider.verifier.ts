@@ -6,7 +6,6 @@ import {
   InboundWebhookVerifier,
   VerifiedInboundWebhook,
 } from './inbound-webhook-verifier.port';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class StripeProviderVerifier implements InboundWebhookVerifier {
@@ -53,7 +52,7 @@ export class StripeProviderVerifier implements InboundWebhookVerifier {
     return {
       externalId: event.id,
       eventType: event.type,
-      payload: event as unknown as Prisma.InputJsonValue,
+      payload: event as unknown,
       occurredAt: new Date(event.created * 1000).toISOString(),
     };
   }

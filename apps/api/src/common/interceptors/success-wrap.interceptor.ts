@@ -12,6 +12,8 @@ import { getTraceId } from '@repo/shared';
 function normalizeJson(value: any): any {
   if (typeof value === 'bigint') return value.toString();
 
+  if (value instanceof Date) return value.toISOString();
+
   if (Array.isArray(value)) {
     return value.map(normalizeJson);
   }

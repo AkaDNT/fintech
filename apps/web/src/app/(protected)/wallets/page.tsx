@@ -2,6 +2,7 @@
 
 import { useWallets } from "@/modules/wallets/hooks/use-wallets";
 import { WalletList } from "@/modules/wallets/components/wallet-list";
+import { WalletTopUpCard } from "@/modules/wallets/components/wallet-topup-card";
 import { PageTitle } from "@/shared/components/page-title";
 import { LoadingState } from "@/shared/components/loading-state";
 import { ErrorState } from "@/shared/components/error-state";
@@ -36,6 +37,7 @@ export default function WalletsPage() {
     <section className="space-y-6">
       <PageTitle title="Wallets" subtitle="Your balances across currencies" />
       <WalletList wallets={walletsQuery.data} />
+      <WalletTopUpCard wallets={walletsQuery.data} />
     </section>
   );
 }

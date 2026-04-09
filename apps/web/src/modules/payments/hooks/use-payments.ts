@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   listAdminPayments,
   listPayments,
@@ -24,6 +24,7 @@ function makePaymentsKey(
 export function usePayments(filters?: PaymentListFilters) {
   return useQuery({
     queryKey: makePaymentsKey(QUERY_KEYS.paymentsBase, filters),
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const data = await listPayments(filters);
       return data.map(mapPayment);
@@ -34,6 +35,7 @@ export function usePayments(filters?: PaymentListFilters) {
 export function useAdminPayments(filters?: PaymentListFilters) {
   return useQuery({
     queryKey: makePaymentsKey(QUERY_KEYS.adminPaymentsBase, filters),
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const data = await listAdminPayments(filters);
       return data.map(mapPayment);

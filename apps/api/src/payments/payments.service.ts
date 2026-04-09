@@ -5,7 +5,13 @@ import {
   PaymentProvider,
   SupportedPaymentProvider,
 } from './providers/payment-provider.port';
-import { PaymentDirection, PaymentStatus, TxKind, TxStatus } from '@repo/db';
+import {
+  EntryType,
+  PaymentDirection,
+  PaymentStatus,
+  TxKind,
+  TxStatus,
+} from '@repo/db';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { parseAmount } from 'src/common/money/amount';
 import { WalletErrors } from 'src/wallets/errors/wallet-error.factory';
@@ -52,11 +58,13 @@ export class PaymentsService {
     walletId: string;
     amountStr: string;
     currency: 'VND' | 'USD';
+    direction?: PaymentDirection;
     merchantRef?: string;
     externalRef?: string;
     description?: string;
   }) {
     const amount = parseAmount(params.amountStr);
+    const direction = params.direction ?? PaymentDirection.DEBIT;
 
     const wallet = await this.prisma.wallet.findUnique({
       where: { id: params.walletId },
@@ -87,7 +95,7 @@ export class PaymentsService {
         currency: wallet.currency,
         amount,
         status: PaymentStatus.CREATED,
-        direction: PaymentDirection.DEBIT,
+        direction,
         merchantRef: params.merchantRef ?? null,
         externalRef: params.externalRef ?? null,
         description: params.description ?? null,
@@ -97,6 +105,7 @@ export class PaymentsService {
         walletId: true,
         amount: true,
         currency: true,
+        direction: true,
         status: true,
         merchantRef: true,
         externalRef: true,
@@ -110,6 +119,7 @@ export class PaymentsService {
       walletId: payment.walletId,
       amount: payment.amount.toString(),
       currency: payment.currency,
+      direction: payment.direction,
       status: payment.status,
       merchantRef: payment.merchantRef,
       externalRef: payment.externalRef,
@@ -124,6 +134,7 @@ export class PaymentsService {
     amountStr: string;
     currency: 'VND' | 'USD';
     provider: SupportedPaymentProvider;
+    direction?: PaymentDirection;
     merchantRef?: string;
     description?: string;
   }) {
@@ -133,6 +144,7 @@ export class PaymentsService {
       walletId: params.walletId,
       amountStr: params.amountStr,
       currency: params.currency,
+      direction: params.direction,
       merchantRef: params.merchantRef,
       description: params.description,
     });
@@ -170,6 +182,236 @@ export class PaymentsService {
         qrCodeUrl: created.qrCodeUrl ?? null,
       },
     };
+  }
+
+  async createTopUpProviderIntent(params: {
+    userId: string;
+    walletId: string;
+    amountStr: string;
+    currency: 'VND' | 'USD';
+    provider: SupportedPaymentProvider;
+    merchantRef?: string;
+    description?: string;
+  }) {
+    return this.createProviderIntent({
+      ...params,
+      direction: PaymentDirection.CREDIT,
+    });
+  }
+
+  async settleTopUp(params: { userId: string; paymentId: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({
+        where: { id: params.paymentId },
+        include: {
+          wallet: {
+            select: {
+              id: true,
+              userId: true,
+              currency: true,
+              status: true,
+              availableBalance: true,
+              lockedBalance: true,
+            },
+          },
+          ledgerTx: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      if (!payment || payment.userId !== params.userId) {
+        throw PaymentErrors.paymentNotFound();
+      }
+
+      if (payment.direction !== PaymentDirection.CREDIT) {
+        throw PaymentErrors.paymentInvalidState(
+          'Only payment in CREDIT direction can be settled as top up',
+        );
+      }
+
+      if (payment.status === PaymentStatus.CAPTURED && payment.ledgerTxId) {
+        return {
+          paymentId: payment.id,
+          walletId: payment.walletId,
+          amount: payment.amount.toString(),
+          currency: payment.currency,
+          status: payment.status,
+          ledgerTxId: payment.ledgerTxId,
+          createdAt: payment.createdAt.toISOString(),
+          walletBalance: {
+            availableBalance: payment.wallet.availableBalance.toString(),
+            lockedBalance: payment.wallet.lockedBalance.toString(),
+          },
+        };
+      }
+
+      if (payment.wallet.status !== 'ACTIVE') {
+        throw WalletErrors.walletDisabled();
+      }
+
+      if (payment.status !== PaymentStatus.CREATED) {
+        throw PaymentErrors.paymentInvalidState(
+          'Only payment in CREATED state can be settled',
+        );
+      }
+
+      const systemUser = await tx.user.findUnique({
+        where: { email: 'system@local.test' },
+        select: { id: true },
+      });
+
+      if (!systemUser) {
+        throw PaymentErrors.systemUserNotFound();
+      }
+
+      const systemWallet = await tx.wallet.findUnique({
+        where: {
+          userId_currency: {
+            userId: systemUser.id,
+            currency: payment.currency,
+          },
+        },
+        select: {
+          id: true,
+          availableBalance: true,
+          lockedBalance: true,
+          currency: true,
+          status: true,
+        },
+      });
+
+      if (!systemWallet) {
+        throw PaymentErrors.systemWalletNotFound();
+      }
+
+      if (systemWallet.status !== 'ACTIVE') {
+        throw WalletErrors.systemWalletDisabled();
+      }
+
+      if (systemWallet.availableBalance < payment.amount) {
+        throw PaymentErrors.insufficientAvailableFunds();
+      }
+
+      const updatedUserWallet = await tx.wallet.update({
+        where: { id: payment.walletId },
+        data: {
+          availableBalance: payment.wallet.availableBalance + payment.amount,
+        },
+        select: {
+          id: true,
+          availableBalance: true,
+          lockedBalance: true,
+        },
+      });
+
+      await tx.wallet.update({
+        where: { id: systemWallet.id },
+        data: {
+          availableBalance: systemWallet.availableBalance - payment.amount,
+        },
+      });
+
+      const ledgerTx = await tx.ledgerTransaction.create({
+        data: {
+          kind: TxKind.TOPUP,
+          status: TxStatus.SUCCEEDED,
+          currency: payment.currency,
+          amount: payment.amount,
+          reference: payment.merchantRef ?? payment.externalRef ?? payment.id,
+          createdBy: params.userId,
+          entries: {
+            create: [
+              {
+                walletId: systemWallet.id,
+                type: EntryType.DEBIT,
+                amount: payment.amount,
+                currency: payment.currency,
+              },
+              {
+                walletId: payment.walletId,
+                type: EntryType.CREDIT,
+                amount: payment.amount,
+                currency: payment.currency,
+              },
+            ],
+          },
+        },
+        select: {
+          id: true,
+          createdAt: true,
+        },
+      });
+
+      const updatedPayment = await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.CAPTURED,
+          ledgerTxId: ledgerTx.id,
+        },
+        select: {
+          id: true,
+          walletId: true,
+          amount: true,
+          currency: true,
+          status: true,
+          ledgerTxId: true,
+        },
+      });
+
+      await createPaymentOutboxEvent(tx, {
+        eventType: PAYMENT_EVENTS.CAPTURED,
+        paymentId: payment.id,
+        userId: payment.userId,
+        walletId: payment.walletId,
+        amount: payment.amount,
+        currency: payment.currency,
+        status: PaymentStatus.CAPTURED,
+        traceId: getTraceId(),
+        extra: {
+          ledgerTxId: ledgerTx.id,
+          flow: 'TOPUP',
+        },
+      });
+
+      await createAuditLog(tx, {
+        actorType: AUDIT_ACTOR_TYPES.USER,
+        actorId: params.userId,
+        action: AUDIT_ACTIONS.PAYMENT_CAPTURE,
+        entityType: 'payment',
+        entityId: payment.id,
+        before: {
+          paymentStatus: 'CREATED',
+          availableBalance: payment.wallet.availableBalance.toString(),
+        },
+        after: {
+          paymentStatus: 'CAPTURED',
+          availableBalance: updatedUserWallet.availableBalance.toString(),
+        },
+        metadata: {
+          walletId: payment.walletId,
+          ledgerTxId: ledgerTx.id,
+          flow: 'TOPUP',
+        },
+        traceId: getTraceId(),
+      });
+
+      return {
+        paymentId: updatedPayment.id,
+        walletId: updatedPayment.walletId,
+        amount: updatedPayment.amount.toString(),
+        currency: updatedPayment.currency,
+        status: updatedPayment.status,
+        ledgerTxId: updatedPayment.ledgerTxId,
+        createdAt: ledgerTx.createdAt.toISOString(),
+        walletBalance: {
+          availableBalance: updatedUserWallet.availableBalance.toString(),
+          lockedBalance: updatedUserWallet.lockedBalance.toString(),
+        },
+      };
+    });
   }
 
   async holdPayment(params: { userId: string; paymentId: string }) {
@@ -734,7 +976,14 @@ export class PaymentsService {
         userId,
         ...(query.status ? { status: query.status } : {}),
         ...(query.currency ? { currency: query.currency } : {}),
-        ...(query.merchantRef ? { merchantRef: query.merchantRef } : {}),
+        ...(query.merchantRef
+          ? {
+              merchantRef: {
+                contains: query.merchantRef,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
       },
       orderBy: { createdAt: 'desc' },
       select: {

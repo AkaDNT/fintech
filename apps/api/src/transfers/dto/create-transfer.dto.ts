@@ -1,9 +1,15 @@
-import { IsEnum, IsOptional, IsString, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 import { Currency } from '@repo/db';
 
 export class CreateTransferDto {
-  @IsString()
-  toUserId: string;
+  @IsEmail()
+  toUserEmail: string;
 
   @IsEnum(Currency)
   currency: Currency;

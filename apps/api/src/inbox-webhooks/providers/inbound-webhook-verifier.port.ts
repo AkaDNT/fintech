@@ -1,9 +1,7 @@
-import { Prisma } from '@prisma/client';
-
 export type VerifiedInboundWebhook = {
   externalId: string;
   eventType: string;
-  payload: Prisma.InputJsonValue;
+  payload: unknown;
   occurredAt?: string | null;
 };
 

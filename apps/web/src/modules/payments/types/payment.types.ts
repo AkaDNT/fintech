@@ -1,6 +1,14 @@
 export type PaymentCurrency = "VND" | "USD";
 export type PaymentProvider = "stripe" | "paypal" | "wise" | "flutterwave";
 
+export interface PaymentProviderData {
+  checkoutUrl?: string | null;
+  clientSecret?: string | null;
+  payUrl?: string | null;
+  deeplink?: string | null;
+  qrCodeUrl?: string | null;
+}
+
 export interface CreatePaymentIntentRequest {
   walletId: string;
   amount: string;
@@ -15,11 +23,14 @@ export interface CreatePaymentIntentResponse {
   walletId: string;
   amount: string;
   currency: PaymentCurrency;
+  direction?: "DEBIT" | "CREDIT";
   status: string;
   merchantRef: string | null;
   externalRef: string | null;
   description: string | null;
   createdAt: string;
+  provider?: PaymentProvider;
+  providerData?: PaymentProviderData;
 }
 
 export interface PaymentDto {
@@ -28,6 +39,7 @@ export interface PaymentDto {
   walletId: string;
   currency: PaymentCurrency;
   amount: string;
+  direction?: "DEBIT" | "CREDIT";
   status: string;
   merchantRef: string | null;
   externalRef: string | null;
@@ -43,6 +55,7 @@ export interface Payment {
   walletId: string;
   currency: PaymentCurrency;
   amount: bigint;
+  direction?: "DEBIT" | "CREDIT";
   status: string;
   merchantRef: string | null;
   externalRef: string | null;
@@ -67,6 +80,10 @@ export interface PaymentActionResponse {
   refundTxId?: string;
   capturedAt?: string;
   createdAt?: string;
+  walletBalance?: {
+    availableBalance: string;
+    lockedBalance: string;
+  };
 }
 
 export interface ExpireHoldsResponse {

@@ -16,12 +16,34 @@ export class TransfersService {
   async createTransfer(params: {
     idemKey: string;
     userId: string;
-    toUserId: string;
+    toUserEmail: string;
     currency: Currency;
     amountStr: string;
   }) {
-    const { idemKey, userId, toUserId, currency, amountStr } = params;
-    const requestHash = `${userId}:${toUserId}:${currency}:${amountStr}`;
+    const { idemKey, userId, toUserEmail, currency, amountStr } = params;
+
+    const toUser = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: toUserEmail,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!toUser) {
+      throw new AppException(
+        {
+          code: ERROR_CODES.RESOURCE_NOT_FOUND,
+          message: 'Destination user not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const toUserId = toUser.id;
+    const requestHash = `${userId}:${toUserEmail.toLowerCase()}:${currency}:${amountStr}`;
 
     // 1) Idempotency: If replayed, return the cached response without re-executing business logic
     const started = await this.idem.start(idemKey, 'TRANSFER', requestHash);

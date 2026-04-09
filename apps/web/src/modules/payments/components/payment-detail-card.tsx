@@ -51,7 +51,9 @@ export function PaymentDetailCard({
             Amount
           </p>
           <p className="mt-1 text-2xl font-bold tracking-tight text-[#111827]">
-            {currencyText(payment.amount, payment.currency)}
+            {currencyText(payment.amount, payment.currency, {
+              unit: "major",
+            })}
           </p>
         </div>
 

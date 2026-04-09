@@ -1,7 +1,7 @@
 import type { Currency } from "@/shared/types/common.types";
 
 export interface CreateTransferRequest {
-  toUserId: string;
+  toUserEmail: string;
   currency: Currency;
   amount: string;
   note?: string;

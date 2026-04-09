@@ -17,7 +17,7 @@ export function TransferForm() {
   const form = useForm<TransferSchemaInput>({
     resolver: zodResolver(transferSchema),
     defaultValues: {
-      toUserId: "",
+      toUserEmail: "",
       currency: "VND",
       amount: "",
       note: "",
@@ -27,13 +27,25 @@ export function TransferForm() {
   return (
     <form
       className="space-y-4"
-      onSubmit={form.handleSubmit((values) =>
-        createTransferMutation.mutate(values),
-      )}
+      onSubmit={form.handleSubmit((values) => {
+        createTransferMutation.mutate(values, {
+          onSuccess: () => {
+            form.reset({
+              toUserEmail: "",
+              currency: "VND",
+              amount: "",
+              note: "",
+            });
+          },
+        });
+      })}
     >
       <div className="space-y-1">
-        <label className="text-sm font-semibold">To User Id</label>
-        <Input {...form.register("toUserId")} />
+        <label className="text-sm font-semibold">To User Email</label>
+        <Input
+          placeholder="user@example.com"
+          {...form.register("toUserEmail")}
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

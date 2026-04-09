@@ -43,7 +43,7 @@ export class InboxWebhooksService {
           source: params.source,
           externalId: verified.externalId,
           eventType: verified.eventType,
-          payload: verified.payload,
+          payload: verified.payload as any,
           status: 'RECEIVED',
           traceId: params.traceId ?? null,
         },

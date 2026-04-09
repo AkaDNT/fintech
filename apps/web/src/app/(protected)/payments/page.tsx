@@ -19,6 +19,10 @@ export default function PaymentsPage() {
   const [merchantRefInput, setMerchantRefInput] = useState("");
   const [merchantRef, setMerchantRef] = useState("");
 
+  const applyMerchantRefFilter = () => {
+    setMerchantRef(merchantRefInput.trim());
+  };
+
   const filters = useMemo(
     () => ({
       status: status || undefined,
@@ -112,6 +116,12 @@ export default function PaymentsPage() {
             <Input
               value={merchantRefInput}
               onChange={(event) => setMerchantRefInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyMerchantRefFilter();
+                }
+              }}
               placeholder="order_20260318"
             />
           </div>
@@ -119,7 +129,7 @@ export default function PaymentsPage() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => setMerchantRef(merchantRefInput.trim())}
+            onClick={applyMerchantRefFilter}
           >
             Apply filters
           </Button>
@@ -144,6 +154,7 @@ export default function PaymentsPage() {
           />
         ) : (
           <PaymentsTable
+            key={`${status}|${currency}|${merchantRef}`}
             payments={paymentsQuery.data}
             detailBasePath="/payments"
           />

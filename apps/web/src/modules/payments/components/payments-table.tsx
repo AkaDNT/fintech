@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { currencyText } from "@/shared/lib/currency";
 import type { Payment } from "@/modules/payments/types/payment.types";
@@ -21,11 +22,23 @@ export function PaymentsTable({
   payments,
   detailBasePath = "/payments",
   showUserId = false,
+  pageSize = 10,
 }: {
   payments: Payment[];
   detailBasePath?: string;
   showUserId?: boolean;
+  pageSize?: number;
 }) {
+  const [page, setPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(payments.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+
+  const paginatedPayments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return payments.slice(start, start + pageSize);
+  }, [currentPage, pageSize, payments]);
+
   return (
     <div className="overflow-hidden rounded-[20px] border border-[#d9deea] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)]">
       <div className="overflow-x-auto">
@@ -58,7 +71,7 @@ export function PaymentsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#eef2f8]">
-            {payments.map((payment) => (
+            {paginatedPayments.map((payment) => (
               <tr key={payment.id} className="hover:bg-[#f9fbff]">
                 <td className="px-4 py-3 text-sm font-semibold text-[#111827]">
                   <p className="max-w-55 truncate">{payment.id}</p>
@@ -74,7 +87,9 @@ export function PaymentsTable({
                 ) : null}
 
                 <td className="px-4 py-3 text-sm font-semibold text-[#111827]">
-                  {currencyText(payment.amount, payment.currency)}
+                  {currencyText(payment.amount, payment.currency, {
+                    unit: "major",
+                  })}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -102,6 +117,38 @@ export function PaymentsTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e3e8f2] bg-[#f8fafc] px-4 py-3">
+        <p className="text-xs text-[#5b667a]">
+          Showing {(currentPage - 1) * pageSize + 1}-
+          {Math.min(currentPage * pageSize, payments.length)} of{" "}
+          {payments.length} payments
+        </p>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-lg border border-[#d9deea] px-3 py-1.5 text-xs font-semibold text-[#052538] transition hover:bg-[#e8edf7] disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+
+          <span className="text-xs font-semibold text-[#5b667a]">
+            Page {currentPage} / {totalPages}
+          </span>
+
+          <button
+            type="button"
+            className="rounded-lg border border-[#d9deea] px-3 py-1.5 text-xs font-semibold text-[#052538] transition hover:bg-[#e8edf7] disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

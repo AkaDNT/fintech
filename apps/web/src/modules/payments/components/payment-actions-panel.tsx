@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
+import { Select } from "@/shared/components/ui/select";
 import {
   useCancelPayment,
   useCapturePayment,
   useHoldPayment,
   useRefundPayment,
 } from "@/modules/payments/hooks/use-payment-actions";
+import { usePayments } from "@/modules/payments/hooks/use-payments";
+import { currencyText } from "@/shared/lib/currency";
 
 export function PaymentActionsPanel({
   initialPaymentId = "",
@@ -16,6 +18,30 @@ export function PaymentActionsPanel({
   initialPaymentId?: string;
 }) {
   const [paymentId, setPaymentId] = useState(initialPaymentId);
+  const createdPaymentsQuery = usePayments({ status: "CREATED" });
+
+  const createdPayments = useMemo(
+    () => createdPaymentsQuery.data ?? [],
+    [createdPaymentsQuery.data],
+  );
+
+  useEffect(() => {
+    if (initialPaymentId) {
+      setPaymentId(initialPaymentId);
+      return;
+    }
+
+    if (!createdPayments.length) {
+      return;
+    }
+
+    const hasCurrent = createdPayments.some(
+      (payment) => payment.id === paymentId,
+    );
+    if (!hasCurrent) {
+      setPaymentId(createdPayments[0].id);
+    }
+  }, [createdPayments, initialPaymentId, paymentId]);
 
   const holdMutation = useHoldPayment();
   const captureMutation = useCapturePayment();
@@ -28,13 +54,34 @@ export function PaymentActionsPanel({
     <div className="space-y-4">
       <div className="space-y-1">
         <label className="text-sm font-semibold text-[#111827]">
-          Payment ID
+          Select created payment
         </label>
-        <Input
-          placeholder="payment_xxx"
+        <Select
           value={paymentId}
           onChange={(event) => setPaymentId(event.target.value)}
-        />
+          disabled={
+            createdPaymentsQuery.isLoading || createdPayments.length === 0
+          }
+        >
+          {createdPayments.length === 0 ? (
+            <option value="">No CREATED payments</option>
+          ) : null}
+
+          {createdPayments.map((payment) => (
+            <option key={payment.id} value={payment.id}>
+              {payment.id.slice(0, 12)}... -{" "}
+              {currencyText(payment.amount, payment.currency, {
+                unit: "major",
+              })}
+            </option>
+          ))}
+        </Select>
+
+        {createdPayments.length === 0 ? (
+          <p className="text-xs text-[#be2b2b]">
+            No payment in CREATED status is available.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">

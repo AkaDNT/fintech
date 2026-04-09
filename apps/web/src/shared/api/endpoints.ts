@@ -31,9 +31,12 @@ export const ENDPOINTS = {
     createIntent: "/payments/intents",
     createIntentByProvider: (provider: string) =>
       `/payments/intents/${encodeURIComponent(provider)}`,
+    createTopUpIntentByProvider: (provider: string) =>
+      `/payments/topups/intents/${encodeURIComponent(provider)}`,
     detail: (paymentId: string) => `/payments/${paymentId}`,
     hold: (paymentId: string) => `/payments/${paymentId}/hold`,
     capture: (paymentId: string) => `/payments/${paymentId}/capture`,
+    settleTopUp: (paymentId: string) => `/payments/${paymentId}/topup/settle`,
     cancel: (paymentId: string) => `/payments/${paymentId}/cancel`,
     refund: (paymentId: string) => `/payments/${paymentId}/refund`,
   },
