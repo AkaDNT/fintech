@@ -25,6 +25,7 @@ import { InboxWebhooksModule } from './inbox-webhooks/inbox-webhooks.module';
 import { InboxJobsModule } from './inbox-jobs/inbox-jobs.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { HttpMetricsInterceptor } from './common/interceptors/http-metrics.interceptor';
+import { WebhookDeliveryJobsModule } from './webhook-delivery-jobs/webhook-delivery-jobs.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { HttpMetricsInterceptor } from './common/interceptors/http-metrics.inter
     OutboxJobsModule,
     WebhookEndpointsModule,
     WebhookDeliveriesModule,
+    WebhookDeliveryJobsModule,
     InboxWebhooksModule,
     InboxJobsModule,
     ObservabilityModule,

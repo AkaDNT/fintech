@@ -11,4 +11,4 @@ import { webhooksQueueProvider, webhooksRedisProvider } from './webhooks.queue';
     webhooksQueueProvider,
   ],
 })
-export class ReportsModule {}
+export class WebhookDeliveryJobsModule {}

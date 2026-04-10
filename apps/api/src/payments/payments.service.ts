@@ -16,7 +16,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { parseAmount } from 'src/common/money/amount';
 import { WalletErrors } from 'src/wallets/errors/wallet-error.factory';
 import { PaymentErrors } from './errors/payment-error.factory';
-import { PAYMENT_HOLD_TTL_MS } from './payments.constants';
+import { PAYMENT_HOLD_TTL_MS, STRIPE_TOPUP_LIMITS } from './payments.constants';
 import { PaymentQueryDto } from './dto/payment-query.dto';
 import {
   createPaymentOutboxEvent,
@@ -51,6 +51,35 @@ export class PaymentsService {
     }
 
     return provider;
+  }
+
+  private validateStripeTopUpAmountOrThrow(params: {
+    amount: bigint;
+    currency: 'VND' | 'USD';
+  }) {
+    const limit = STRIPE_TOPUP_LIMITS[params.currency];
+    if (params.amount >= limit.min && params.amount <= limit.max) {
+      return;
+    }
+
+    if (params.currency === 'VND') {
+      throw new AppException(
+        {
+          code: ERROR_CODES.AMOUNT_INVALID,
+          message:
+            'Stripe top up amount must be between 10000 and 50000000 VND',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    throw new AppException(
+      {
+        code: ERROR_CODES.AMOUNT_INVALID,
+        message: 'Stripe top up amount must be between 0.50 and 999999.99 USD',
+      },
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   async createIntent(params: {
@@ -193,6 +222,13 @@ export class PaymentsService {
     merchantRef?: string;
     description?: string;
   }) {
+    if (params.provider === 'stripe') {
+      this.validateStripeTopUpAmountOrThrow({
+        amount: parseAmount(params.amountStr),
+        currency: params.currency,
+      });
+    }
+
     return this.createProviderIntent({
       ...params,
       direction: PaymentDirection.CREDIT,

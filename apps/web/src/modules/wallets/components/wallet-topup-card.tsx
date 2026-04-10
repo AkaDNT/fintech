@@ -34,6 +34,49 @@ type FormValues = {
   description: string;
 };
 
+const STRIPE_TOPUP_LIMITS = {
+  VND: {
+    min: BigInt("10000"),
+    max: BigInt("50000000"),
+    helperText: "Valid range: 10,000 to 50,000,000 (minor units)",
+    errorText: "Amount must be between 10,000 and 50,000,000 VND",
+  },
+  USD: {
+    min: BigInt("50"),
+    max: BigInt("99999999"),
+    helperText:
+      "Valid range: 50 to 99,999,999 (minor units, equals 0.50 to 999,999.99 USD)",
+    errorText: "Amount must be between 0.50 and 999,999.99 USD",
+  },
+} as const;
+
+function getTopUpLimitByCurrency(currency?: string) {
+  if (currency === "USD") {
+    return STRIPE_TOPUP_LIMITS.USD;
+  }
+
+  return STRIPE_TOPUP_LIMITS.VND;
+}
+
+function validateStripeTopUpAmount(value: string, currency?: string) {
+  if (!value.trim()) {
+    return "Please enter an amount";
+  }
+
+  if (!/^[0-9]+$/.test(value)) {
+    return "Amount must contain digits only";
+  }
+
+  const amount = BigInt(value);
+  const limit = getTopUpLimitByCurrency(currency);
+
+  if (amount < limit.min || amount > limit.max) {
+    return limit.errorText;
+  }
+
+  return true;
+}
+
 const stripePublishableKey =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 const stripePromise = stripePublishableKey
@@ -84,6 +127,8 @@ function StripeTopUpForm({ wallets }: { wallets: Wallet[] }) {
   );
 
   const form = useForm<FormValues>({
+    mode: "onChange",
+    reValidateMode: "onChange",
     defaultValues: {
       walletId: activeWallets[0]?.id ?? wallets[0]?.id ?? "",
       amount: "",
@@ -97,6 +142,7 @@ function StripeTopUpForm({ wallets }: { wallets: Wallet[] }) {
     wallets.find((wallet) => wallet.id === walletId) ??
     activeWallets[0] ??
     wallets[0];
+  const topUpLimit = getTopUpLimitByCurrency(selectedWallet?.currency);
 
   useEffect(() => {
     if (!wallets.length) {
@@ -263,11 +309,21 @@ function StripeTopUpForm({ wallets }: { wallets: Wallet[] }) {
               <Input
                 placeholder="10000"
                 inputMode="numeric"
+                aria-invalid={Boolean(form.formState.errors.amount)}
                 {...form.register("amount", {
-                  required: true,
-                  pattern: /^[0-9]+$/,
+                  validate: (value) =>
+                    validateStripeTopUpAmount(value, selectedWallet?.currency),
                 })}
               />
+              <p
+                className={
+                  form.formState.errors.amount
+                    ? "text-xs text-[#be2b2b]"
+                    : "text-xs text-[#5b667a]"
+                }
+              >
+                {form.formState.errors.amount?.message ?? topUpLimit.helperText}
+              </p>
             </div>
 
             <div className="space-y-1.5">

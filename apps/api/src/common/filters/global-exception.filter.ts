@@ -70,7 +70,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
               ? ERROR_CODES.AUTH_UNAUTHORIZED
               : status === HttpStatus.FORBIDDEN
                 ? ERROR_CODES.AUTH_FORBIDDEN
-                : ERROR_CODES.VALIDATION_ERROR,
+                : status === HttpStatus.NOT_FOUND
+                  ? ERROR_CODES.RESOURCE_NOT_FOUND
+                  : ERROR_CODES.VALIDATION_ERROR,
           message,
           details,
         },
