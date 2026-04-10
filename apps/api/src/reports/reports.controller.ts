@@ -17,7 +17,7 @@ import { Roles } from 'src/common/roles.decorator';
 import { ReportsService } from './reports.service';
 import { ReconcileQueryDto } from './dto/reconcile-query.dto';
 import { UsersCsvQueryDto } from './dto/users-csv-query.dto';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('admin/reports')
 @UseGuards(JwtAccessGuard, RolesGuard)
