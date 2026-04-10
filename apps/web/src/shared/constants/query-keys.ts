@@ -9,7 +9,8 @@ export const QUERY_KEYS = {
   walletLedger: (walletId: string, cursor: string | null) =>
     ["wallet-ledger", walletId, cursor] as const,
   reportJob: (id: string) => ["report-job", id] as const,
-  reportUsersCsvFiles: (limit: number) => ["report-users-csv-files", limit] as const,
+  reportUsersCsvFiles: (limit: number) =>
+    ["report-users-csv-files", limit] as const,
   webhookEndpointsBase: ["webhook-endpoints"] as const,
   webhookEndpointDetail: (endpointId: string) =>
     ["webhook-endpoint-detail", endpointId] as const,

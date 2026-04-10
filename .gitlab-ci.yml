@@ -65,18 +65,19 @@ package_worker:
 package_web:
   extends: .buildkit_template
   script:
-    - '[ -n "${NEXT_PUBLIC_API_BASE_URL:-}" ] || (echo "NEXT_PUBLIC_API_BASE_URL missing"; exit 1)'
-    - '[ -n "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}" ] || (echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY missing in CI job"; exit 1)'
-    - echo "API base length: ${#NEXT_PUBLIC_API_BASE_URL}"
-    - echo "STRIPE key length: ${#NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}"
+    - test -n "${NEXT_PUBLIC_API_BASE_URL:-}" || (echo "NEXT_PUBLIC_API_BASE_URL missing"; exit 1)
+    - test -n "${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}" || (echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY missing in CI job"; exit 1)
+    - echo "API base length ${#NEXT_PUBLIC_API_BASE_URL}"
+    - echo "STRIPE key length ${#NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}"
     - |
       buildctl-daemonless.sh build \
         --frontend dockerfile.v0 \
         --local context=. \
         --local dockerfile=. \
         --opt filename=apps/web/Dockerfile \
-        --opt build-arg:NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
-        --opt build-arg:NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY \
+        --opt no-cache=true \
+        --opt build-arg:NEXT_PUBLIC_API_BASE_URL="$NEXT_PUBLIC_API_BASE_URL" \
+        --opt build-arg:NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" \
         --output type=image,name=$CI_REGISTRY_IMAGE/web:$CI_COMMIT_SHORT_SHA,push=true
 
 deploy_production:
