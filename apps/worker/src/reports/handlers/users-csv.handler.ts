@@ -30,12 +30,15 @@ export class UsersCsvHandler implements JobHandler {
   } {
     const bucket = process.env.S3_BUCKET?.trim();
     const region = process.env.AWS_REGION?.trim() || 'ap-southeast-1';
-    const endpoint = process.env.S3_ENDPOINT?.trim();
+    const endpoint =
+      process.env.S3_ENDPOINT?.trim() || process.env.MINIO_ENDPOINT?.trim();
     const accessKeyId =
       process.env.S3_ACCESS_KEY?.trim() ||
+      process.env.MINIO_ACCESS_KEY?.trim() ||
       process.env.AWS_ACCESS_KEY_ID?.trim();
     const secretAccessKey =
       process.env.S3_SECRET_KEY?.trim() ||
+      process.env.MINIO_SECRET_KEY?.trim() ||
       process.env.AWS_SECRET_ACCESS_KEY?.trim();
 
     if (!bucket) {
@@ -75,6 +78,13 @@ export class UsersCsvHandler implements JobHandler {
         provider: 'minio',
         bucket,
         client: new S3Client(s3Config),
+      };
+    }
+
+    if (accessKeyId && secretAccessKey) {
+      s3Config.credentials = {
+        accessKeyId,
+        secretAccessKey,
       };
     }
 

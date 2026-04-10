@@ -58,6 +58,9 @@ export const ENDPOINTS = {
         if (params?.to) searchParams.set("to", params.to);
         return `/admin/reports/users${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
       },
+      usersFiles: (limit = 10) => `/admin/reports/users/files?limit=${limit}`,
+      usersFileDownload: (id: string) =>
+        `/admin/reports/users/files/${encodeURIComponent(id)}/download`,
       reconcile: (currency?: string) =>
         `/admin/reports/reconcile${currency ? `?currency=${encodeURIComponent(currency)}` : ""}`,
       status: (id: string) => `/admin/reports/jobs/${id}`,
